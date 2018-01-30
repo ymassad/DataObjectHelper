@@ -69,6 +69,15 @@ namespace DataObjectHelper
             return list.ToArray();
         }
 
+        public static IEnumerable<T> ItemsWithValue<T>(this IEnumerable<Maybe<T>> enumerable)
+        {
+            foreach (var item in enumerable)
+            {
+                if (item.HasValue)
+                    yield return item.GetValue();
+            }
+        }
+
         public static Maybe<TResult> ChainValues<T1, T2, TResult>(this (Maybe<T1> maybe1, Maybe<T2> maybe2) maybes,
             Func<T1, T2, TResult> function)
         {

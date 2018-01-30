@@ -24,44 +24,30 @@ namespace DataObjectHelper
                 Utilities.ResolveStaticClassWhereToInsertMethods(
                     attributeSyntax);
 
-            var doTypeSymbol =
-                Utilities.GetDataObjectType(attributeSyntax)
-                    .ChainValue(d =>
-                        semanticModel.GetSymbolInfo(d).Symbol
-                            .TryCast().To<INamedTypeSymbol>()
-                            .If(x => x.TypeKind == TypeKind.Class));
+            var doTypeSymbols = Utilities.GetDataObjectTypes(attributeSyntax)
+                .ChainValue(types =>
+                    types
+                        .Select(type =>
+                            semanticModel.GetSymbolInfo(type).Symbol
+                                .TryCast().To<INamedTypeSymbol>()
+                                .If(x => x.TypeKind == TypeKind.Class))
+                        .ToArray()
+                        .Traverse());
 
             var hostClassSymbol = hostClass
                 .ChainValue(x => semanticModel.GetDeclaredSymbol(x))
                 .TryCast().To<INamedTypeSymbol>();
 
-            var existingMethods =
-                (hostClassSymbol, doTypeSymbol)
-                .ChainValues((host, doSym) =>
-                    host.GetMembers("Match")
-                        .OfType<IMethodSymbol>()
-                        .Where(x => x.Parameters.Length >= 1 && x.Parameters[0].Type.Equals(doSym))
-                        .ToArray());
-
-            var casesMaybe = doTypeSymbol.ChainValue(x => CreateCases(x, originalSolution));
-
-            var methodsToAdd = (doTypeSymbol, casesMaybe, existingMethods)
-                .ChainValues((ts, cases, existing) =>
-                {
-                    bool methodMethod1Exist = existing.Any(e => Utilities.GetParameterTypes(e).Any(Utilities.IsFunc));
-
-                    bool methodMethod2Exist = existing.Any(e => Utilities.GetParameterTypes(e).Any(Utilities.IsAction));
-
-                    List<MethodDeclarationSyntax> methods = new List<MethodDeclarationSyntax>();
-
-                    if (!methodMethod1Exist)
-                        methods.Add(CreateMatchMethod(ts, cases));
-
-                    if (!methodMethod2Exist)
-                        methods.Add(CreateMatchMethodThatReturnsVoid(ts, cases));
-
-                    return methods.ToArray();
-                });
+            var methodsToAdd =
+                (hostClassSymbol, doTypeSymbols)
+                    .ChainValues((host, symbols) => 
+                        symbols
+                            .Select(symbol => 
+                                GetMethodsToAddForType(host, symbol, originalSolution))
+                            .ItemsWithValue()
+                            .SelectMany(x => x)
+                            .ToArray())
+                    .If(x => x.Length > 0);
 
             Solution AddMethodsToClass(
                 ClassDeclarationSyntax classDeclarationSyntax,
@@ -79,6 +65,35 @@ namespace DataObjectHelper
                 .ValueOr(originalSolution);
 
             return solutionToReturn;
+        }
+
+        private static Maybe<MethodDeclarationSyntax[]> GetMethodsToAddForType(INamedTypeSymbol hostClassSymbol, INamedTypeSymbol doTypeSymbol, Solution originalSolution)
+        {
+            var existingMethods =
+                hostClassSymbol.GetMembers("Match")
+                    .OfType<IMethodSymbol>()
+                    .Where(x => x.Parameters.Length >= 1 && x.Parameters[0].Type.Equals(doTypeSymbol))
+                    .ToArray();
+
+            var casesMaybe = CreateCases(doTypeSymbol, originalSolution);
+
+            return casesMaybe
+                .ChainValue(cases =>
+                {
+                    bool methodMethod1Exist1 = existingMethods.Any(e => Utilities.GetParameterTypes(e).Any(Utilities.IsFunc));
+
+                    bool methodMethod2Exist1 = existingMethods.Any(e => Utilities.GetParameterTypes(e).Any(Utilities.IsAction));
+
+                    List<MethodDeclarationSyntax> methods1 = new List<MethodDeclarationSyntax>();
+
+                    if (!methodMethod1Exist1)
+                        methods1.Add(CreateMatchMethod(doTypeSymbol, cases));
+
+                    if (!methodMethod2Exist1)
+                        methods1.Add(CreateMatchMethodThatReturnsVoid(doTypeSymbol, cases));
+
+                    return methods1.ToArray();
+                });
         }
 
         public static Maybe<Case[]> CreateCases(INamedTypeSymbol doTypeSymbol,

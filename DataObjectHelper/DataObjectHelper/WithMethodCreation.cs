@@ -22,33 +22,27 @@ namespace DataObjectHelper
             var hostClass = Utilities.ResolveStaticClassWhereToInsertMethods(
                 attributeSyntax);
 
-            var doTypeSymbol = Utilities.GetDataObjectType(attributeSyntax)
-                .ChainValue(d =>
-                    semanticModel.GetSymbolInfo(d).Symbol
-                        .TryCast().To<INamedTypeSymbol>()
-                        .If(x => x.TypeKind == TypeKind.Class)
-                        .If(x => !x.IsAbstract));
-
-            var dataObjectProperties =
-                doTypeSymbol
-                    .ChainValue(x => x.GetMembers().OfType<IPropertySymbol>().ToArray());
-
-            var typeConstructorDetails =
-                (doTypeSymbol, dataObjectProperties)
-                .ChainValues(GetTypeConstructorDetails);
-
-            var hostClassSymbol = hostClass
-                .ChainValue(x => semanticModel.GetDeclaredSymbol(x))
-                .TryCast().To<INamedTypeSymbol>();
-
-            var existingWithMethods =
-                (hostClassSymbol, doTypeSymbol)
-                .ChainValues(GetExistingWithMethods);
+            var doTypeSymbols = Utilities.GetDataObjectTypes(attributeSyntax)
+                .ChainValue(types =>
+                    types
+                        .Select(type =>
+                            semanticModel.GetSymbolInfo(type).Symbol
+                                .TryCast().To<INamedTypeSymbol>()
+                                .If(x => x.TypeKind == TypeKind.Class)
+                                .If(x => !x.IsAbstract))
+                        .Traverse());
 
             var methodsToAdd =
-                (typeConstructorDetails, doTypeSymbol, existingWithMethods)
-                .ChainValues(CreateWithMethodsToAdd);
-
+                (hostClass, doTypeSymbols)
+                .ChainValues((host, symbols) =>
+                    symbols
+                        .Select(symbol =>
+                            GetMethodsToAddForType(symbol, host, semanticModel))
+                        .ItemsWithValue()
+                        .SelectMany(x => x)
+                        .ToArray())
+                .If(x => x.Length > 0);
+ 
             Solution AddMethodsToClass(
                 ClassDeclarationSyntax classDeclarationSyntax,
                 MethodDeclarationSyntax[] methodDeclarationSyntaxs)
@@ -64,6 +58,28 @@ namespace DataObjectHelper
                 .ChainValues(AddMethodsToClass);
 
             return solutionToReturn.ValueOr(originalSolution);
+        }
+
+        private static Maybe<MethodDeclarationSyntax[]> GetMethodsToAddForType(
+            INamedTypeSymbol doTypeSymbol,
+            ClassDeclarationSyntax hostClass,
+            SemanticModel semanticModel)
+        {
+            var dataObjectProperties =
+                doTypeSymbol.GetMembers().OfType<IPropertySymbol>().ToArray();
+
+            var typeConstructorDetails =
+                GetTypeConstructorDetails(doTypeSymbol, dataObjectProperties);
+
+            var hostClassSymbol = semanticModel.GetDeclaredSymbol(hostClass)
+                .TryCast().To<INamedTypeSymbol>();
+
+            var existingWithMethods =
+                hostClassSymbol
+                    .ChainValue(host => GetExistingWithMethods(host, doTypeSymbol));
+
+            return (typeConstructorDetails, existingWithMethods)
+                .ChainValues((details, existing) => CreateWithMethodsToAdd(details, doTypeSymbol, existing));
         }
 
         public static string[] GetExistingWithMethods(INamedTypeSymbol hostClass, INamedTypeSymbol dataObject)

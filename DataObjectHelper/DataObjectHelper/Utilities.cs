@@ -10,11 +10,13 @@ namespace DataObjectHelper
 {
     public static class Utilities
     {
-        public static Maybe<TypeSyntax> GetDataObjectType(AttributeSyntax attributeSyntax)
+        public static Maybe<TypeSyntax[]> GetDataObjectTypes(AttributeSyntax attributeSyntax)
         {
-            return attributeSyntax.ArgumentList.Arguments.FirstOrNoValue()
-                .ChainValue(x => x.Expression.TryCast().To<TypeOfExpressionSyntax>())
-                .ChainValue(x => x.Type);
+            return attributeSyntax.ArgumentList.Arguments
+                .Select(x => x.Expression.TryCast().To<TypeOfExpressionSyntax>())
+                .Select(e => e.ChainValue(x => x.Type))
+                .Traverse()
+                .ChainValue(x => x.ToArray());
         }
 
         public static Maybe<ClassDeclarationSyntax> ResolveStaticClassWhereToInsertMethods(
