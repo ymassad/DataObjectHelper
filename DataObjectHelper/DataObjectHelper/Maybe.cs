@@ -7,7 +7,7 @@ namespace DataObjectHelper
     {
         public class NoValueClass
         {
-            
+
         }
 
         public static NoValueClass NoValue { get; } = new NoValueClass();
@@ -33,7 +33,7 @@ namespace DataObjectHelper
 
         public static Maybe<T> OfValue(T value)
         {
-            if(value == null)
+            if (value == null)
                 throw new Exception("Value cannot be null");
 
             return new Maybe<T>(true, value);
@@ -104,6 +104,15 @@ namespace DataObjectHelper
                 return this;
 
             return defaultValueFactory();
+        }
+
+
+        public TResult Match<TResult>(Func<T, TResult> whenHasValue, Func<TResult> caseHasNoValue)
+        {
+            if (hasValue)
+                return whenHasValue(value);
+
+            return caseHasNoValue();
         }
     }
 }
