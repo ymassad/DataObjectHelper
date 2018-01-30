@@ -54,21 +54,20 @@ namespace DataObjectHelper
             return new ToBeCastedMaybe<T>(maybe);
         }
 
-        public static Maybe<T[]> Traverse<T>(this Maybe<T>[] enumerable)
+        public static Maybe<IEnumerable<T>> Traverse<T>(this IEnumerable<Maybe<T>> enumerable)
         {
             List<T> list = new List<T>();
 
             foreach (var item in enumerable)
             {
                 if(item.HasNoValue)
-                    return Maybe<T[]>.NoValue();
+                    return Maybe<IEnumerable<T>>.NoValue();
 
                 list.Add(item.GetValue());
             }
 
             return list.ToArray();
         }
-
 
         public static Maybe<TResult> ChainValues<T1, T2, TResult>(this (Maybe<T1> maybe1, Maybe<T2> maybe2) maybes,
             Func<T1, T2, TResult> function)

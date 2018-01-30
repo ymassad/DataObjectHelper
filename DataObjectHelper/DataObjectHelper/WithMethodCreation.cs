@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -32,9 +33,9 @@ namespace DataObjectHelper
                 doTypeSymbol
                     .ChainValue(x => x.GetMembers().OfType<IPropertySymbol>().ToArray());
 
-            var doParamsAndProps =
+            var typeConstructorDetails =
                 (doTypeSymbol, dataObjectProperties)
-                .ChainValues(GetConstructorParametersAndCorrespondingProperties);
+                .ChainValues(GetTypeConstructorDetails);
 
             var hostClassSymbol = hostClass
                 .ChainValue(x => semanticModel.GetDeclaredSymbol(x))
@@ -45,7 +46,7 @@ namespace DataObjectHelper
                 .ChainValues(GetExistingWithMethods);
 
             var methodsToAdd =
-                (doParamsAndProps, doTypeSymbol, existingWithMethods)
+                (typeConstructorDetails, doTypeSymbol, existingWithMethods)
                 .ChainValues(CreateWithMethodsToAdd);
 
             Solution AddMethodsToClass(
@@ -60,7 +61,7 @@ namespace DataObjectHelper
 
             var solutionToReturn =
                 (hostClass, methodsToAdd)
-                .ChainValues<ClassDeclarationSyntax, MethodDeclarationSyntax[], Solution>(AddMethodsToClass);
+                .ChainValues(AddMethodsToClass);
 
             return solutionToReturn.ValueOr(originalSolution);
         }
@@ -76,45 +77,77 @@ namespace DataObjectHelper
         }
 
         public static MethodDeclarationSyntax[] CreateWithMethodsToAdd(
-            PropertyAndParameter[] constructorParametersAndCorrespondingProperties,
+            TypeConstructorDetails typeConstructorDetails,
             INamedTypeSymbol doType,
             string[] existingWithMethodNames)
         {
             return
-                constructorParametersAndCorrespondingProperties
+                typeConstructorDetails.PropertyAndParameters
                     .Select(item => new { item, newMethodName = "With" + item.Property.Name })
                     .Where(x => !existingWithMethodNames.Contains(x.newMethodName))
-                    .Select(x => CreateWithMethod(doType, constructorParametersAndCorrespondingProperties, x.item))
-                    .ToArray<MethodDeclarationSyntax>();
+                    .Select(x => CreateWithMethod(doType, typeConstructorDetails, x.item))
+                    .ToArray();
         }
 
-        public static Maybe<PropertyAndParameter[]> GetConstructorParametersAndCorrespondingProperties(
+        public static Maybe<TypeConstructorDetails> GetTypeConstructorDetails(
             INamedTypeSymbol symbol,
             IPropertySymbol[] properties)
         {
-            return
-                symbol.Constructors
-                    .FirstOrNoValue().ChainValue<PropertyAndParameter[]>(x =>
-                        ImmutableArrayExtensions.Select<IParameterSymbol, Maybe<PropertyAndParameter>>(x.Parameters, param => GetMatchingProperty(properties, param)
-                                    .ChainValue(p => new PropertyAndParameter(param, p)))
-                            .ToArray()
-                            .Traverse());
+            var normalConstructor = symbol.Constructors
+                .Where(x => x.Parameters.Length == properties.Length)
+                .FirstOrNoValue();
+
+            Maybe<ImmutableArray<PropertyAndParameter>> CreatePropertyAndParameterMap(IMethodSymbol methodSymbol)
+            {
+                return methodSymbol.Parameters
+                    .Select(param =>
+                        GetMatchingProperty(properties, param)
+                            .ChainValue(p => new PropertyAndParameter(param, p)))
+                    .Traverse()
+                    .ChainValue(x => x.ToImmutableArray());
+            }
+
+            return normalConstructor.Match(cons =>
+            {
+                return CreatePropertyAndParameterMap(cons).ChainValue(x =>
+                    new TypeConstructorDetails(new Constructor.NormalConstructor(), x));
+            },
+            () =>
+            {
+                var newMethod =
+                    symbol.BaseType.ToMaybe()
+                        .ChainValue(x =>
+                            x.GetMembers("New" + symbol.Name)
+                                .OfType<IMethodSymbol>()
+                                .FirstOrNoValue())
+                        .If(x => x.IsStatic)
+                        .If(x => x.DeclaredAccessibility == Accessibility.Public);
+
+                return newMethod.ChainValue(x => CreatePropertyAndParameterMap(x)).ChainValue(x =>
+                    new TypeConstructorDetails(new Constructor.FSharpUnionCaseNewMethod(), x));
+            });
         }
 
         public static Maybe<IPropertySymbol> GetMatchingProperty(
             IPropertySymbol[] properties,
             IParameterSymbol param)
         {
+            bool AreEqual(IPropertySymbol prop)
+            {
+                return prop.Name.Equals(param.Name, StringComparison.OrdinalIgnoreCase) ||
+                       ("_" + prop.Name).Equals(param.Name, StringComparison.OrdinalIgnoreCase);
+            }
+
             return
                 properties
                     .FirstOrNoValue(prop =>
-                        prop.Name.Equals(param.Name, StringComparison.OrdinalIgnoreCase)
+                        AreEqual(prop)
                         && prop.Type.Equals(param.Type));
         }
 
         public static MethodDeclarationSyntax CreateWithMethod(
             INamedTypeSymbol doTypeSymbol,
-            PropertyAndParameter[] allProperties,
+            TypeConstructorDetails typeConstructorDetails,
             PropertyAndParameter propertyToCreateMethodFor)
         {
             var newMethodName = "With" + propertyToCreateMethodFor.Property.Name;
@@ -127,11 +160,11 @@ namespace DataObjectHelper
 
             List<SyntaxNodeOrToken> nodes = new List<SyntaxNodeOrToken>();
 
-            foreach (var property in allProperties)
+            foreach (var property in typeConstructorDetails.PropertyAndParameters)
             {
                 var propertyName = property.Property.Name;
 
-                var propertyNameCamelCase = Utilities.MakeFirstLetterSmall(property.Property.Name);
+                var parameterName = Utilities.MakeFirstLetterSmall(property.Parameter.Name);
 
                 if (nodes.Count > 0)
                     nodes.Add(SyntaxFactory.Token(SyntaxKind.CommaToken));
@@ -143,7 +176,7 @@ namespace DataObjectHelper
                                 SyntaxFactory.IdentifierName("newValue"))
                             .WithNameColon(
                                 SyntaxFactory.NameColon(
-                                    SyntaxFactory.IdentifierName(propertyNameCamelCase))));
+                                    SyntaxFactory.IdentifierName(parameterName))));
                 }
                 else
                 {
@@ -155,9 +188,32 @@ namespace DataObjectHelper
                                     SyntaxFactory.IdentifierName(propertyName)))
                             .WithNameColon(
                                 SyntaxFactory.NameColon(
-                                    SyntaxFactory.IdentifierName(propertyNameCamelCase))));
+                                    SyntaxFactory.IdentifierName(parameterName))));
                 }
             }
+
+
+            var constructionExpressionSyntax =
+                typeConstructorDetails.Constructor
+                    .Match<ExpressionSyntax>(caseNormalConstructor: () => 
+                        SyntaxFactory.ObjectCreationExpression(
+                            SyntaxFactory.IdentifierName(doFullname))
+                                .WithArgumentList(
+                                    SyntaxFactory.ArgumentList(
+                                        SyntaxFactory.SeparatedList<ArgumentSyntax>(
+                                            nodes.ToArray()))),
+                        caseFSharpUnionCaseNewMethod: () =>
+                            SyntaxFactory.CastExpression(
+                                SyntaxFactory.IdentifierName(doFullname),
+                                SyntaxFactory.InvocationExpression(
+                                    SyntaxFactory.MemberAccessExpression(
+                                        SyntaxKind.SimpleMemberAccessExpression,
+                                        SyntaxFactory.IdentifierName(Utilities.GetFullName(doTypeSymbol.BaseType)),
+                                        SyntaxFactory.IdentifierName("New" + doTypeSymbol.Name)))
+                                    .WithArgumentList(
+                                        SyntaxFactory.ArgumentList(
+                                            SyntaxFactory.SeparatedList<ArgumentSyntax>(
+                                                nodes.ToArray())))));
 
 
             return SyntaxFactory.MethodDeclaration(
@@ -185,12 +241,7 @@ namespace DataObjectHelper
                     SyntaxFactory.Block(
                         SyntaxFactory.SingletonList<StatementSyntax>(
                             SyntaxFactory.ReturnStatement(
-                                SyntaxFactory.ObjectCreationExpression(
-                                        SyntaxFactory.IdentifierName(doFullname))
-                                    .WithArgumentList(
-                                        SyntaxFactory.ArgumentList(
-                                            SyntaxFactory.SeparatedList<ArgumentSyntax>(
-                                                nodes.ToArray())))))));
+                                constructionExpressionSyntax))));
         }
     }
 }
