@@ -56,22 +56,45 @@ namespace DataObjectHelper
             AttributeSyntax attributeSyntax,
             SemanticModel semanticModel)
         {
-            INamedTypeSymbol[] GetDerivedChildren(INamedTypeSymbol type)
-            {
-                return type.GetTypeMembers().Where(x => object.Equals(x.BaseType,type)).ToArray();
-            }
-
             return Utilities.GetDataObjectTypesSpecifiedInAttribute(attributeSyntax)
                 .ChainValue(types =>
                     types
                         .Select(type =>
-                            semanticModel.GetSymbolInfo(type).Symbol
+                        {
+                            return semanticModel.GetSymbolInfo(type).Symbol
                                 .TryCast().To<INamedTypeSymbol>()
                                 .If(x => x.TypeKind == TypeKind.Class)
-                                .ChainValue(x => Utilities.GetFullConstructedForm(x))
-                                .ChainValue(x => GetDerivedChildren(x).Concat(new []{x}).Where(c => !c.IsAbstract)))
+                                .ChainValue(GetDataObjectsTypes);
+                        })
                         .Traverse())
                 .ChainValue(x => x.SelectMany(c => c).ToArray());
+        }
+
+        private static INamedTypeSymbol[] GetDataObjectsTypes(INamedTypeSymbol @class)
+        {
+            if (@class.IsStatic)
+            {
+                INamedTypeSymbol[] GetDataObjectTypesForModule()
+                {
+                    return @class.GetTypeMembers()
+                        .Where(x => x.TypeKind == TypeKind.Class)
+                        .SelectMany(GetDataObjectsTypes)
+                        .ToArray();
+                }
+
+                return GetDataObjectTypesForModule();
+            }
+            else
+            {
+                INamedTypeSymbol[] GetDerivedChildren(INamedTypeSymbol type)
+                {
+                    return type.GetTypeMembers().Where(x => object.Equals(x.BaseType, type)).ToArray();
+                }
+
+                var constructed = Utilities.GetFullConstructedForm(@class);
+
+                return GetDerivedChildren(constructed).Concat(new[] { constructed }).Where(c => !c.IsAbstract).ToArray();
+            }
         }
 
         private static Maybe<MethodDeclarationSyntax[]> GetMethodsToAddForType(
