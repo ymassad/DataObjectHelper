@@ -65,6 +65,9 @@ namespace DataObjectHelper
             ClassDeclarationSyntax hostClass,
             SemanticModel semanticModel)
         {
+            if (doTypeSymbol.IsUnboundGenericType)
+                doTypeSymbol = doTypeSymbol.ConstructedFrom;
+
             var dataObjectProperties =
                 doTypeSymbol.GetMembers().OfType<IPropertySymbol>().ToArray();
 
@@ -232,7 +235,8 @@ namespace DataObjectHelper
                                                 nodes.ToArray())))));
 
 
-            return SyntaxFactory.MethodDeclaration(
+            var method =
+                SyntaxFactory.MethodDeclaration(
                     SyntaxFactory.IdentifierName(doFullname),
                     SyntaxFactory.Identifier(newMethodName))
                 .WithModifiers(
@@ -258,6 +262,24 @@ namespace DataObjectHelper
                         SyntaxFactory.SingletonList<StatementSyntax>(
                             SyntaxFactory.ReturnStatement(
                                 constructionExpressionSyntax))));
+
+            if (doTypeSymbol.IsGenericType)
+            {
+                var openTypeParams = doTypeSymbol.TypeArguments
+                    .Where(x => x.TypeKind == TypeKind.TypeParameter)
+                    .ToArray();
+
+                if (openTypeParams.Any())
+                {
+                    method = method.WithTypeParameterList(
+                        SyntaxFactory.TypeParameterList(
+                            SyntaxFactory.SeparatedList(
+                                openTypeParams
+                                    .Select(x => SyntaxFactory.TypeParameter(SyntaxFactory.Identifier(x.Name))))));
+                }
+            }
+
+            return method;
         }
     }
 }

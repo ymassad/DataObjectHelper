@@ -46,6 +46,9 @@ namespace DataObjectHelper
 
         public static string GetFullName(ITypeSymbol typeSymbol)
         {
+            if (typeSymbol.TypeKind == TypeKind.TypeParameter)
+                return typeSymbol.Name;
+
             string name = typeSymbol.Name;
 
             if (typeSymbol is INamedTypeSymbol namedType)
