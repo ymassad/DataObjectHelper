@@ -24,15 +24,7 @@ namespace DataObjectHelper
                 Utilities.ResolveStaticClassWhereToInsertMethods(
                     attributeSyntax);
 
-            var doTypeSymbols = Utilities.GetDataObjectTypesSpecifiedInAttribute(attributeSyntax)
-                .ChainValue(types =>
-                    types
-                        .Select(type =>
-                            semanticModel.GetSymbolInfo(type).Symbol
-                                .TryCast().To<INamedTypeSymbol>()
-                                .If(x => x.TypeKind == TypeKind.Class))
-                        .ToArray()
-                        .Traverse());
+            var doTypeSymbols = GetDataObjectTypesToCreateMatchMethodsFor(attributeSyntax, semanticModel);
 
             var hostClassSymbol = hostClass
                 .ChainValue(x => semanticModel.GetDeclaredSymbol(x))
@@ -65,6 +57,23 @@ namespace DataObjectHelper
                 .ValueOr(originalSolution);
 
             return solutionToReturn;
+        }
+
+        private static Maybe<INamedTypeSymbol[]> GetDataObjectTypesToCreateMatchMethodsFor(
+            AttributeSyntax attributeSyntax,
+            SemanticModel semanticModel)
+        {
+            return Utilities.GetDataObjectTypesSpecifiedInAttribute(attributeSyntax)
+                .ChainValue(types =>
+                    types
+                        .Select(type =>
+                            semanticModel.GetSymbolInfo(type).Symbol
+                                .TryCast().To<INamedTypeSymbol>()
+                                .If(x => x.TypeKind == TypeKind.Class)
+                                .ChainValue(x => Utilities.GetFullConstructedForm(x)))
+                        .ToArray()
+                        .Traverse())
+                .ChainValue(x => x.ToArray());
         }
 
         private static Maybe<MethodDeclarationSyntax[]> GetMethodsToAddForType(INamedTypeSymbol hostClassSymbol, INamedTypeSymbol doTypeSymbol, Solution originalSolution)
@@ -129,6 +138,7 @@ namespace DataObjectHelper
 
                     return caseTypes
                         .Where(x => !x.IsAbstract)
+                        .Where(x => HasNoTypeParameters(x))
                         .Select(x => (Case)new Case.ClassCase(x))
                         .ToArray()
                         .ToMaybe()
@@ -136,13 +146,18 @@ namespace DataObjectHelper
                 });
         }
 
+        private static bool HasNoTypeParameters(INamedTypeSymbol x)
+        {
+            return x.TypeParameters.Length == 0;
+        }
+
         public static MethodDeclarationSyntax CreateMatchMethod(
-            INamedTypeSymbol typeSymbol,
+            INamedTypeSymbol doTypeSymbol,
             Case[] cases)
         {
-            var doClassName = typeSymbol.Name;
+            var doClassName = doTypeSymbol.Name;
 
-            var doClassFullname = Utilities.GetFullName(typeSymbol);
+            var doClassFullname = Utilities.GetFullName(doTypeSymbol);
 
             var classFullname = doClassFullname;
 
@@ -244,7 +259,6 @@ namespace DataObjectHelper
 
                             return
                                 SyntaxFactory.IfStatement(
-
                                     SyntaxFactory.MemberAccessExpression(
                                         SyntaxKind.SimpleMemberAccessExpression,
                                         SyntaxFactory.IdentifierName(firstParameterName),
@@ -271,30 +285,51 @@ namespace DataObjectHelper
 
             statements.Add(throwStatementSyntax);
 
-            return SyntaxFactory.MethodDeclaration(
+            var method =
+                SyntaxFactory.MethodDeclaration(
                     SyntaxFactory.IdentifierName("TResult"),
                     SyntaxFactory.Identifier("Match"))
                 .WithModifiers(
                     SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword), SyntaxFactory.Token(SyntaxKind.StaticKeyword)))
-                .WithTypeParameterList(
-                    SyntaxFactory.TypeParameterList(
-                        SyntaxFactory.SingletonSeparatedList(
-                            SyntaxFactory.TypeParameter(
-                                SyntaxFactory.Identifier("TResult")))))
                 .WithParameterList(
                     parameterListSyntax)
                 .WithBody(
                     SyntaxFactory.Block(
                         statements.ToArray()));
+
+            List<TypeParameterSyntax> typeParameters = new List<TypeParameterSyntax>();
+
+            if (doTypeSymbol.IsGenericType)
+            {
+                var openTypeParams = Utilities.GetOpenTypeParameters(doTypeSymbol);
+
+                if (openTypeParams.Any())
+                {
+                    typeParameters.AddRange(
+                        openTypeParams
+                            .Select(x => SyntaxFactory.TypeParameter(SyntaxFactory.Identifier(x.Name))));
+                }
+            }
+
+            typeParameters.Add(
+                SyntaxFactory.TypeParameter(
+                    SyntaxFactory.Identifier("TResult")));
+
+            method = method.WithTypeParameterList(
+                SyntaxFactory.TypeParameterList(
+                        SyntaxFactory.SeparatedList(
+                            typeParameters)));
+
+            return method;
         }
 
         public static MethodDeclarationSyntax CreateMatchMethodThatReturnsVoid(
-            INamedTypeSymbol typeSymbol,
+            INamedTypeSymbol doTypeSymbol,
             Case[] cases)
         {
-            var doClassName = typeSymbol.Name;
+            var doClassName = doTypeSymbol.Name;
 
-            var doClassFullname = Utilities.GetFullName(typeSymbol);
+            var doClassFullname = Utilities.GetFullName(doTypeSymbol);
 
             var classFullname = doClassFullname;
 
@@ -421,7 +456,8 @@ namespace DataObjectHelper
 
             statements.Add(throwStatementSyntax);
 
-            return SyntaxFactory.MethodDeclaration(
+            var method =
+                SyntaxFactory.MethodDeclaration(
                     SyntaxFactory.IdentifierName("void"),
                     SyntaxFactory.Identifier("Match"))
                 .WithModifiers(
@@ -431,6 +467,22 @@ namespace DataObjectHelper
                 .WithBody(
                     SyntaxFactory.Block(
                         statements.ToArray()));
+
+            if (doTypeSymbol.IsGenericType)
+            {
+                var openTypeParams = Utilities.GetOpenTypeParameters(doTypeSymbol);
+
+                if (openTypeParams.Any())
+                {
+                    method = method.WithTypeParameterList(
+                        SyntaxFactory.TypeParameterList(
+                            SyntaxFactory.SeparatedList(
+                                openTypeParams
+                                    .Select(x => SyntaxFactory.TypeParameter(SyntaxFactory.Identifier(x.Name))))));
+                }
+            }
+
+            return method;
         }
     }
 }

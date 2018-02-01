@@ -88,5 +88,33 @@ namespace DataObjectHelper
         {
             return methodSymbol.Parameters.Select(x => x.Type).ToArray().OfType<INamedTypeSymbol>().ToArray();
         }
+
+        public static ITypeSymbol[] GetOpenTypeParameters(INamedTypeSymbol doTypeSymbol)
+        {
+            var myParams = doTypeSymbol.TypeArguments
+                .Where(x => x.TypeKind == TypeKind.TypeParameter)
+                .ToArray();
+
+            if (doTypeSymbol.ContainingType != null)
+            {
+                return GetOpenTypeParameters(doTypeSymbol.ContainingType).Concat(myParams).ToArray();
+            }
+
+            return myParams;
+        }
+
+        public static INamedTypeSymbol GetFullConstructedForm(INamedTypeSymbol doTypeSymbol)
+        {
+            if (!doTypeSymbol.IsUnboundGenericType)
+                return doTypeSymbol;
+            
+            if (doTypeSymbol.ContainingType != null)
+            {
+                return GetFullConstructedForm(doTypeSymbol.ContainingType)
+                    .GetTypeMembers(doTypeSymbol.Name, doTypeSymbol.Arity).First();
+            }
+
+            return doTypeSymbol.ConstructedFrom;
+        }
     }
 }

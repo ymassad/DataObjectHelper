@@ -68,7 +68,7 @@ namespace DataObjectHelper
                             semanticModel.GetSymbolInfo(type).Symbol
                                 .TryCast().To<INamedTypeSymbol>()
                                 .If(x => x.TypeKind == TypeKind.Class)
-                                .ChainValue(x => GetFullConstructedForm(x))
+                                .ChainValue(x => Utilities.GetFullConstructedForm(x))
                                 .ChainValue(x => GetDerivedChildren(x).Concat(new []{x}).Where(c => !c.IsAbstract)))
                         .Traverse())
                 .ChainValue(x => x.SelectMany(c => c).ToArray());
@@ -94,20 +94,6 @@ namespace DataObjectHelper
 
             return (typeConstructorDetails, existingWithMethods)
                 .ChainValues((details, existing) => CreateWithMethodsToAdd(details, doTypeSymbol, existing));
-        }
-
-        private static INamedTypeSymbol GetFullConstructedForm(INamedTypeSymbol doTypeSymbol)
-        {
-            if (!doTypeSymbol.IsUnboundGenericType)
-                return doTypeSymbol;
-            
-            if (doTypeSymbol.ContainingType != null)
-            {
-                return GetFullConstructedForm(doTypeSymbol.ContainingType)
-                    .GetTypeMembers(doTypeSymbol.Name, doTypeSymbol.Arity).First();
-            }
-
-            return doTypeSymbol.ConstructedFrom;
         }
 
         public static string[] GetExistingWithMethods(INamedTypeSymbol hostClass, INamedTypeSymbol dataObject)
@@ -290,7 +276,7 @@ namespace DataObjectHelper
 
             if (doTypeSymbol.IsGenericType)
             {
-                var openTypeParams = GetOpenTypeParameters(doTypeSymbol);
+                var openTypeParams = Utilities.GetOpenTypeParameters(doTypeSymbol);
 
                 if (openTypeParams.Any())
                 {
@@ -303,20 +289,6 @@ namespace DataObjectHelper
             }
 
             return method;
-        }
-
-        private static ITypeSymbol[] GetOpenTypeParameters(INamedTypeSymbol doTypeSymbol)
-        {
-            var myParams = doTypeSymbol.TypeArguments
-                .Where(x => x.TypeKind == TypeKind.TypeParameter)
-                .ToArray();
-
-            if (doTypeSymbol.ContainingType != null)
-            {
-                return GetOpenTypeParameters(doTypeSymbol.ContainingType).Concat(myParams).ToArray();
-            }
-
-            return myParams;
         }
     }
 }
