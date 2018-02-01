@@ -97,7 +97,7 @@ namespace DataObjectHelper
             SemanticModel semanticModel)
         {
             var dataObjectProperties =
-                doTypeSymbol.GetMembers().OfType<IPropertySymbol>().ToArray();
+                GetDataObjectProperties(doTypeSymbol);
 
             var typeConstructorDetails =
                 GetTypeConstructorDetails(doTypeSymbol, dataObjectProperties);
@@ -111,6 +111,18 @@ namespace DataObjectHelper
 
             return (typeConstructorDetails, existingWithMethods)
                 .ChainValues((details, existing) => CreateWithMethodsToAdd(details, doTypeSymbol, existing));
+        }
+
+        private static IPropertySymbol[] GetDataObjectProperties(INamedTypeSymbol doTypeSymbol)
+        {
+            var props = doTypeSymbol.GetMembers().OfType<IPropertySymbol>().ToList();
+
+            if (doTypeSymbol.BaseType != null)
+            {
+                props.AddRange(GetDataObjectProperties(doTypeSymbol.BaseType));
+            }
+
+            return props.ToArray();
         }
 
         public static string[] GetExistingWithMethods(INamedTypeSymbol hostClass, INamedTypeSymbol dataObject)
