@@ -70,10 +70,24 @@ namespace DataObjectHelper
                             semanticModel.GetSymbolInfo(type).Symbol
                                 .TryCast().To<INamedTypeSymbol>()
                                 .If(x => x.TypeKind == TypeKind.Class)
-                                .ChainValue(x => Utilities.GetFullConstructedForm(x)))
-                        .ToArray()
-                        .Traverse())
+                                .ChainValue(x => GetDataObjectsTypes(x)))
+                        .Traverse()
+                        .ChainValue(x => x.SelectMany(y => y)))
                 .ChainValue(x => x.ToArray());
+        }
+
+        private static INamedTypeSymbol[] GetDataObjectsTypes(INamedTypeSymbol @class)
+        {
+            if (@class.IsStatic)
+            {
+                return Utilities.GetModuleClasses(@class)
+                    .SelectMany(GetDataObjectsTypes)
+                    .ToArray();
+            }
+            else
+            {
+                return new[] { Utilities.GetFullConstructedForm(@class) };
+            }
         }
 
         private static Maybe<MethodDeclarationSyntax[]> GetMethodsToAddForType(INamedTypeSymbol hostClassSymbol, INamedTypeSymbol doTypeSymbol, Solution originalSolution)

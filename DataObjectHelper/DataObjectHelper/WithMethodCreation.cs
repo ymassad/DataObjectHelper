@@ -74,15 +74,9 @@ namespace DataObjectHelper
         {
             if (@class.IsStatic)
             {
-                INamedTypeSymbol[] GetDataObjectTypesForModule()
-                {
-                    return @class.GetTypeMembers()
-                        .Where(x => x.TypeKind == TypeKind.Class)
-                        .SelectMany(GetDataObjectsTypes)
-                        .ToArray();
-                }
-
-                return GetDataObjectTypesForModule();
+                return Utilities.GetModuleClasses(@class)
+                    .SelectMany(GetDataObjectsTypes)
+                    .ToArray();
             }
             else
             {

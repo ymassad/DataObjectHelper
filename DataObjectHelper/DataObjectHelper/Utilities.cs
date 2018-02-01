@@ -116,5 +116,12 @@ namespace DataObjectHelper
 
             return doTypeSymbol.ConstructedFrom;
         }
+
+        public static INamedTypeSymbol[] GetModuleClasses(INamedTypeSymbol module)
+        {
+            return module.GetTypeMembers()
+                .Where(x => x.TypeKind == TypeKind.Class)
+                .ToArray();
+        }
     }
 }
