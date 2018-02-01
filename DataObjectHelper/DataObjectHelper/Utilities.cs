@@ -10,7 +10,7 @@ namespace DataObjectHelper
 {
     public static class Utilities
     {
-        public static Maybe<TypeSyntax[]> GetDataObjectTypes(AttributeSyntax attributeSyntax)
+        public static Maybe<TypeSyntax[]> GetDataObjectTypesSpecifiedInAttribute(AttributeSyntax attributeSyntax)
         {
             return attributeSyntax.ArgumentList.Arguments
                 .Select(x => x.Expression.TryCast().To<TypeOfExpressionSyntax>())

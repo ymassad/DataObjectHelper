@@ -24,7 +24,7 @@ namespace DataObjectHelper
                 Utilities.ResolveStaticClassWhereToInsertMethods(
                     attributeSyntax);
 
-            var doTypeSymbols = Utilities.GetDataObjectTypes(attributeSyntax)
+            var doTypeSymbols = Utilities.GetDataObjectTypesSpecifiedInAttribute(attributeSyntax)
                 .ChainValue(types =>
                     types
                         .Select(type =>

@@ -22,15 +22,7 @@ namespace DataObjectHelper
             var hostClass = Utilities.ResolveStaticClassWhereToInsertMethods(
                 attributeSyntax);
 
-            var doTypeSymbols = Utilities.GetDataObjectTypes(attributeSyntax)
-                .ChainValue(types =>
-                    types
-                        .Select(type =>
-                            semanticModel.GetSymbolInfo(type).Symbol
-                                .TryCast().To<INamedTypeSymbol>()
-                                .If(x => x.TypeKind == TypeKind.Class)
-                                .If(x => !x.IsAbstract))
-                        .Traverse());
+            var doTypeSymbols = GetDataObjectTypeToCreateWithMethodsFor(attributeSyntax, semanticModel);
 
             var methodsToAdd =
                 (hostClass, doTypeSymbols)
@@ -60,14 +52,33 @@ namespace DataObjectHelper
             return solutionToReturn.ValueOr(originalSolution);
         }
 
+        private static Maybe<INamedTypeSymbol[]> GetDataObjectTypeToCreateWithMethodsFor(
+            AttributeSyntax attributeSyntax,
+            SemanticModel semanticModel)
+        {
+            INamedTypeSymbol[] GetDerivedChildren(INamedTypeSymbol type)
+            {
+                return type.GetTypeMembers().Where(x => object.Equals(x.BaseType,type)).ToArray();
+            }
+
+            return Utilities.GetDataObjectTypesSpecifiedInAttribute(attributeSyntax)
+                .ChainValue(types =>
+                    types
+                        .Select(type =>
+                            semanticModel.GetSymbolInfo(type).Symbol
+                                .TryCast().To<INamedTypeSymbol>()
+                                .If(x => x.TypeKind == TypeKind.Class)
+                                .ChainValue(x => GetFullConstructedForm(x))
+                                .ChainValue(x => GetDerivedChildren(x).Concat(new []{x}).Where(c => !c.IsAbstract)))
+                        .Traverse())
+                .ChainValue(x => x.SelectMany(c => c).ToArray());
+        }
+
         private static Maybe<MethodDeclarationSyntax[]> GetMethodsToAddForType(
             INamedTypeSymbol doTypeSymbol,
             ClassDeclarationSyntax hostClass,
             SemanticModel semanticModel)
         {
-            if (doTypeSymbol.IsUnboundGenericType)
-                doTypeSymbol = GetFullConstructedForm(doTypeSymbol);
-
             var dataObjectProperties =
                 doTypeSymbol.GetMembers().OfType<IPropertySymbol>().ToArray();
 
@@ -87,6 +98,9 @@ namespace DataObjectHelper
 
         private static INamedTypeSymbol GetFullConstructedForm(INamedTypeSymbol doTypeSymbol)
         {
+            if (!doTypeSymbol.IsUnboundGenericType)
+                return doTypeSymbol;
+            
             if (doTypeSymbol.ContainingType != null)
             {
                 return GetFullConstructedForm(doTypeSymbol.ContainingType)
