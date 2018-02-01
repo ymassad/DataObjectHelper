@@ -53,7 +53,7 @@ namespace DataObjectHelper
 
             if (typeSymbol is INamedTypeSymbol namedType)
             {
-                if (namedType.IsGenericType)
+                if (namedType.IsGenericType && namedType.TypeArguments.Any())
                 {
                     name += "<" + String.Join(", ", namedType.TypeArguments.Select(x => GetFullName(x))) + ">";
                 }
