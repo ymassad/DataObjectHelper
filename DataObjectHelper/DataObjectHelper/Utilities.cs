@@ -49,6 +49,9 @@ namespace DataObjectHelper
             if (typeSymbol.TypeKind == TypeKind.TypeParameter)
                 return typeSymbol.Name;
 
+            if (typeSymbol is IArrayTypeSymbol array)
+                return GetFullName(array.ElementType) + "[]";
+
             string name = typeSymbol.Name;
 
             if (typeSymbol is INamedTypeSymbol namedType)
