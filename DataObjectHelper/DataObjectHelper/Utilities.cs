@@ -123,5 +123,14 @@ namespace DataObjectHelper
                 .Where(x => x.TypeKind == TypeKind.Class)
                 .ToArray();
         }
+
+        public static MemberAccessExpressionSyntax CreateSimpleMemberAccessSyntax(string parent, string child)
+        {
+            return SyntaxFactory.MemberAccessExpression(
+                SyntaxKind.SimpleMemberAccessExpression,
+                SyntaxFactory.IdentifierName(parent),
+                SyntaxFactory.IdentifierName(child));
+        }
+
     }
 }

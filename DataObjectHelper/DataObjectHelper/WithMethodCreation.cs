@@ -241,10 +241,7 @@ namespace DataObjectHelper
                 {
                     nodes.Add(
                         SyntaxFactory.Argument(
-                                SyntaxFactory.MemberAccessExpression(
-                                    SyntaxKind.SimpleMemberAccessExpression,
-                                    SyntaxFactory.IdentifierName(thisParameterName),
-                                    SyntaxFactory.IdentifierName(propertyName)))
+                            Utilities.CreateSimpleMemberAccessSyntax(thisParameterName, propertyName))
                             .WithNameColon(
                                 SyntaxFactory.NameColon(
                                     SyntaxFactory.IdentifierName(parameterName))));
@@ -265,16 +262,12 @@ namespace DataObjectHelper
                             SyntaxFactory.CastExpression(
                                 SyntaxFactory.IdentifierName(doFullname),
                                 SyntaxFactory.InvocationExpression(
-                                    SyntaxFactory.MemberAccessExpression(
-                                        SyntaxKind.SimpleMemberAccessExpression,
-                                        SyntaxFactory.IdentifierName(Utilities.GetFullName(doTypeSymbol.BaseType)),
-                                        SyntaxFactory.IdentifierName("New" + doTypeSymbol.Name)))
+                                    Utilities.CreateSimpleMemberAccessSyntax(Utilities.GetFullName(doTypeSymbol.BaseType), "New" + doTypeSymbol.Name))
                                     .WithArgumentList(
                                         SyntaxFactory.ArgumentList(
                                             SyntaxFactory.SeparatedList<ArgumentSyntax>(
                                                 nodes.ToArray())))));
-
-
+            
             var method =
                 SyntaxFactory.MethodDeclaration(
                     SyntaxFactory.IdentifierName(doFullname),

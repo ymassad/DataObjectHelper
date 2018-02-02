@@ -273,10 +273,7 @@ namespace DataObjectHelper
 
                             return
                                 SyntaxFactory.IfStatement(
-                                    SyntaxFactory.MemberAccessExpression(
-                                        SyntaxKind.SimpleMemberAccessExpression,
-                                        SyntaxFactory.IdentifierName(firstParameterName),
-                                        SyntaxFactory.IdentifierName("Is" + fsharpNullCase.Name)),
+                                    Utilities.CreateSimpleMemberAccessSyntax(firstParameterName, "Is" + fsharpNullCase.Name),
                                     SyntaxFactory.ReturnStatement(
                                         SyntaxFactory.InvocationExpression(
                                                 SyntaxFactory.IdentifierName(caseCamelCaseName + "Case"))
@@ -441,11 +438,7 @@ namespace DataObjectHelper
 
                             return
                                 SyntaxFactory.IfStatement(
-
-                                    SyntaxFactory.MemberAccessExpression(
-                                        SyntaxKind.SimpleMemberAccessExpression,
-                                        SyntaxFactory.IdentifierName(firstParameterName),
-                                        SyntaxFactory.IdentifierName("Is" + fsharpNullCase.Name)),
+                                    Utilities.CreateSimpleMemberAccessSyntax(firstParameterName, "Is" + fsharpNullCase.Name),
                                     SyntaxFactory.Block(
                                         SyntaxFactory.ExpressionStatement(
                                             SyntaxFactory.InvocationExpression(
