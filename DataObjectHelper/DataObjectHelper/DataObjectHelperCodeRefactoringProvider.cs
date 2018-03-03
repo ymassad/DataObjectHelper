@@ -1,23 +1,14 @@
-using System;
-using System.Collections.Generic;
 using System.Composition;
-using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeRefactorings;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.FindSymbols;
-using Microsoft.CodeAnalysis.Rename;
-using Microsoft.CodeAnalysis.Text;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace DataObjectHelper
 {
     [ExportCodeRefactoringProvider(LanguageNames.CSharp, Name = nameof(DataObjectHelperCodeRefactoringProvider)), Shared]
-    internal class DataObjectHelperCodeRefactoringProvider : CodeRefactoringProvider
+    public class DataObjectHelperCodeRefactoringProvider : CodeRefactoringProvider
     {
         public sealed override async Task ComputeRefactoringsAsync(CodeRefactoringContext context)
         {

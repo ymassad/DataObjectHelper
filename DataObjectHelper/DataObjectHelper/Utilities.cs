@@ -66,7 +66,12 @@ namespace DataObjectHelper
                 return GetFullName(typeSymbol.ContainingType) + "." + name;
 
             if (typeSymbol.ContainingNamespace != null)
+            {
+                if (typeSymbol.ContainingNamespace.IsGlobalNamespace)
+                    return name;
+
                 return GetFullName(typeSymbol.ContainingNamespace) + "." + name;
+            }
 
             return name;
         }
