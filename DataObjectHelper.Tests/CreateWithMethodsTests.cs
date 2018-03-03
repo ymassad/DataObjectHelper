@@ -73,14 +73,14 @@ public static class Methods
 @"[CreateWithMethods(typeof(ProductType))]
 public static class Methods
 {
-    public static Namespace1.ProductType WithAge(this Namespace1.ProductType productType, System.Int32 newValue)
+    public static Namespace1.ProductType WithAge(this Namespace1.ProductType instance, System.Int32 newValue)
     {
-        return new Namespace1.ProductType(age: newValue, name: productType.Name);
+        return new Namespace1.ProductType(age: newValue, name: instance.Name);
     }
 
-    public static Namespace1.ProductType WithName(this Namespace1.ProductType productType, System.String newValue)
+    public static Namespace1.ProductType WithName(this Namespace1.ProductType instance, System.String newValue)
     {
-        return new Namespace1.ProductType(age: productType.Age, name: newValue);
+        return new Namespace1.ProductType(age: instance.Age, name: newValue);
     }
 }";
             var content =
@@ -124,14 +124,14 @@ public static class Methods
 @"[CreateWithMethods(typeof(ProductType))]
 public static class Methods
 {
-    public static ProductType WithAge(this ProductType productType, System.Int32 newValue)
+    public static ProductType WithAge(this ProductType instance, System.Int32 newValue)
     {
-        return new ProductType(age: newValue, name: productType.Name);
+        return new ProductType(age: newValue, name: instance.Name);
     }
 
-    public static ProductType WithName(this ProductType productType, System.String newValue)
+    public static ProductType WithName(this ProductType instance, System.String newValue)
     {
-        return new ProductType(age: productType.Age, name: newValue);
+        return new ProductType(age: instance.Age, name: newValue);
     }
 }";
             var content =
@@ -172,14 +172,14 @@ public static class Methods
 @"[CreateWithMethods(typeof(GenericProductType<>))]
 public static class Methods
 {
-    public static GenericProductType<TName> WithAge<TName>(this GenericProductType<TName> genericProductType, System.Int32 newValue)
+    public static GenericProductType<TName> WithAge<TName>(this GenericProductType<TName> instance, System.Int32 newValue)
     {
-        return new GenericProductType<TName>(age: newValue, name: genericProductType.Name);
+        return new GenericProductType<TName>(age: newValue, name: instance.Name);
     }
 
-    public static GenericProductType<TName> WithName<TName>(this GenericProductType<TName> genericProductType, TName newValue)
+    public static GenericProductType<TName> WithName<TName>(this GenericProductType<TName> instance, TName newValue)
     {
-        return new GenericProductType<TName>(age: genericProductType.Age, name: newValue);
+        return new GenericProductType<TName>(age: instance.Age, name: newValue);
     }
 }";
             var content =

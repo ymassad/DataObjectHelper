@@ -213,7 +213,7 @@ namespace DataObjectHelper
 
             var doFullname = Utilities.GetFullName(doTypeSymbol);
 
-            var thisParameterName = Utilities.MakeFirstLetterSmall(doTypeSymbol.Name);
+            var thisParameterName = "instance";
 
             var propertyTypeFullName = Utilities.GetFullName(propertyToCreateMethodFor.Property.Type);
 
