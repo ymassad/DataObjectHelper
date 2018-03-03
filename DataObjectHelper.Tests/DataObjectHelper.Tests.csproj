@@ -161,6 +161,7 @@
   <ItemGroup>
     <Compile Include="CreateMatchMethodsTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utilities.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
