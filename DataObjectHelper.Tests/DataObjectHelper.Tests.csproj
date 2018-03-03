@@ -171,6 +171,10 @@
     <Analyzer Include="..\packages\Microsoft.CodeAnalysis.Analyzers.1.1.0\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.Analyzers.dll" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\DataObjectHelper.Tests.FSharpProject\DataObjectHelper.Tests.FSharpProject.fsproj">
+      <Project>{fca2b253-584b-4f7e-bd4c-8ce884cf21e6}</Project>
+      <Name>DataObjectHelper.Tests.FSharpProject</Name>
+    </ProjectReference>
     <ProjectReference Include="..\DataObjectHelper\DataObjectHelper\DataObjectHelper.csproj">
       <Project>{abb6f06e-976c-4928-aeed-e272afb80031}</Project>
       <Name>DataObjectHelper</Name>

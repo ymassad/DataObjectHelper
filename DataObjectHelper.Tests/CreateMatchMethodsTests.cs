@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using DataObjectHelper.Tests.FSharpProject;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeRefactorings;
@@ -459,6 +460,206 @@ public static class Methods
             Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
         }
 
+        [Test]
+        public void TestCreateMatchMethodsForFSharpDiscriminatedUnion()
+        {
+            //Arrange
+            var methodsClassCode =
+@"[CreateMatchMethods(typeof(DataObjectHelper.Tests.FSharpProject.Module.FSharpDiscriminatedUnion))]
+public static class Methods
+{
+
+}";
+
+            var expectedMethodsClassCodeAfterRefactoring =
+@"[CreateMatchMethods(typeof (DataObjectHelper.Tests.FSharpProject.Module.FSharpDiscriminatedUnion))]
+public static class Methods
+{
+    public static TResult Match<TResult>(
+        this DataObjectHelper.Tests.FSharpProject.Module.FSharpDiscriminatedUnion instance,
+        System.Func<DataObjectHelper.Tests.FSharpProject.Module.FSharpDiscriminatedUnion.Option1, TResult> option1Case,
+        System.Func<TResult> option2Case)
+    {
+        if (instance is DataObjectHelper.Tests.FSharpProject.Module.FSharpDiscriminatedUnion.Option1 option1)
+            return option1Case(option1);
+        if (instance.IsOption2)
+            return option2Case();
+        throw new System.Exception(""Invalid FSharpDiscriminatedUnion type"");
+    }
+
+    public static void Match(
+        this DataObjectHelper.Tests.FSharpProject.Module.FSharpDiscriminatedUnion instance,
+        System.Action<DataObjectHelper.Tests.FSharpProject.Module.FSharpDiscriminatedUnion.Option1> option1Case,
+        System.Action option2Case)
+    {
+        if (instance is DataObjectHelper.Tests.FSharpProject.Module.FSharpDiscriminatedUnion.Option1 option1)
+        {
+            option1Case(option1);
+            return;
+        }
+
+        if (instance.IsOption2)
+        {
+            option2Case();
+            return;
+        }
+
+        throw new System.Exception(""Invalid FSharpDiscriminatedUnion type"");
+    }
+}";
+            var content =
+                MergeParts(createMatchMethodsAttributeCode, methodsClassCode);
+
+            var expectedContentAfterRefactoring =
+                NormalizeCode(
+                    MergeParts(createMatchMethodsAttributeCode, expectedMethodsClassCodeAfterRefactoring));
+
+            //Act
+            var actualContentAfterRefactoring = NormalizeCode(
+                ApplyRefactoring(
+                    content,
+                    SelectSpanWhereCreateMatchMethodsAttributeIsApplied,
+                    GetFsharpTestProjectReference()));
+
+            //Assert
+            Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
+        }
+
+        [Test]
+        public void TestCreateMatchMethodsForOpenGenericFSharpDiscriminatedUnion()
+        {
+            //Arrange
+            var methodsClassCode =
+@"[CreateMatchMethods(typeof(DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<>))]
+public static class Methods
+{
+
+}";
+
+            var expectedMethodsClassCodeAfterRefactoring =
+@"[CreateMatchMethods(typeof (DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<>))]
+public static class Methods
+{
+    public static TResult Match<a, TResult>(
+        this DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<a> instance,
+        System.Func<DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<a>.Option1, TResult> option1Case,
+        System.Func<TResult> option2Case)
+    {
+        if (instance is DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<a>.Option1 option1)
+            return option1Case(option1);
+        if (instance.IsOption2)
+            return option2Case();
+        throw new System.Exception(""Invalid GenericFSharpDiscriminatedUnion type"");
+    }
+
+    public static void Match<a>(
+        this DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<a> instance,
+        System.Action<DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<a>.Option1> option1Case,
+        System.Action option2Case)
+    {
+        if (instance is DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<a>.Option1 option1)
+        {
+            option1Case(option1);
+            return;
+        }
+
+        if (instance.IsOption2)
+        {
+            option2Case();
+            return;
+        }
+
+        throw new System.Exception(""Invalid GenericFSharpDiscriminatedUnion type"");
+    }
+}";
+            var content =
+                MergeParts(createMatchMethodsAttributeCode, methodsClassCode);
+
+            var expectedContentAfterRefactoring =
+                NormalizeCode(
+                    MergeParts(createMatchMethodsAttributeCode, expectedMethodsClassCodeAfterRefactoring));
+
+            //Act
+            var actualContentAfterRefactoring = NormalizeCode(
+                ApplyRefactoring(
+                    content,
+                    SelectSpanWhereCreateMatchMethodsAttributeIsApplied,
+                    GetFsharpTestProjectReference()));
+
+            //Assert
+            Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
+        }
+
+        [Test]
+        public void TestCreateMatchMethodsForClosedGenericFSharpDiscriminatedUnion()
+        {
+            //Arrange
+            var methodsClassCode =
+@"[CreateMatchMethods(typeof(DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<System.String>))]
+public static class Methods
+{
+
+}";
+
+            var expectedMethodsClassCodeAfterRefactoring =
+@"[CreateMatchMethods(typeof (DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<System.String>))]
+public static class Methods
+{
+    public static TResult Match<TResult>(
+        this DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<System.String> instance,
+        System.Func<DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<System.String>.Option1, TResult> option1Case,
+        System.Func<TResult> option2Case)
+    {
+        if (instance is DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<System.String>.Option1 option1)
+            return option1Case(option1);
+        if (instance.IsOption2)
+            return option2Case();
+        throw new System.Exception(""Invalid GenericFSharpDiscriminatedUnion type"");
+    }
+
+    public static void Match(
+        this DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<System.String> instance,
+        System.Action<DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<System.String>.Option1> option1Case,
+        System.Action option2Case)
+    {
+        if (instance is DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<System.String>.Option1 option1)
+        {
+            option1Case(option1);
+            return;
+        }
+
+        if (instance.IsOption2)
+        {
+            option2Case();
+            return;
+        }
+
+        throw new System.Exception(""Invalid GenericFSharpDiscriminatedUnion type"");
+    }
+}";
+            var content =
+                MergeParts(createMatchMethodsAttributeCode, methodsClassCode);
+
+            var expectedContentAfterRefactoring =
+                NormalizeCode(
+                    MergeParts(createMatchMethodsAttributeCode, expectedMethodsClassCodeAfterRefactoring));
+
+            //Act
+            var actualContentAfterRefactoring = NormalizeCode(
+                ApplyRefactoring(
+                    content,
+                    SelectSpanWhereCreateMatchMethodsAttributeIsApplied,
+                    GetFsharpTestProjectReference()));
+
+            //Assert
+            Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
+        }
+
+        private static PortableExecutableReference GetFsharpTestProjectReference()
+        {
+            return MetadataReference.CreateFromFile(typeof(Module.FSharpDiscriminatedUnion).Assembly.Location);
+        }
+
         public string NormalizeCode(string code)
         {
             var syntaxTree = CSharpSyntaxTree.ParseText(code);
@@ -488,7 +689,7 @@ public static class Methods
                 .Span;
         }
 
-        private static string ApplyRefactoring(string content, Func<SyntaxNode, TextSpan> spanSelector)
+        private static string ApplyRefactoring(string content, Func<SyntaxNode, TextSpan> spanSelector, params MetadataReference[] additionalReferences)
         {
             var workspace = new AdhocWorkspace();
 
@@ -496,7 +697,7 @@ public static class Methods
 
             var projectId = ProjectId.CreateNewId();
 
-            solution = AddNewProjectToWorkspace(solution, "NewProject", projectId);
+            solution = AddNewProjectToWorkspace(solution, "NewProject", projectId, additionalReferences);
 
             var documentId = DocumentId.CreateNewId(projectId);
 
@@ -545,7 +746,8 @@ public static class Methods
             return solution.AddDocument(documentId, fileName, SourceText.From(fileContent));
         }
 
-        private static Solution AddNewProjectToWorkspace(Solution solution, string projName, ProjectId projectId)
+        private static Solution AddNewProjectToWorkspace(
+            Solution solution, string projName, ProjectId projectId, params MetadataReference[] additionalReferences)
         {
             MetadataReference csharpSymbolsReference = MetadataReference.CreateFromFile(typeof(CSharpCompilation).Assembly.Location);
             MetadataReference codeAnalysisReference = MetadataReference.CreateFromFile(typeof(Compilation).Assembly.Location);
@@ -567,7 +769,7 @@ public static class Methods
                             systemCoreReference,
                             csharpSymbolsReference,
                             codeAnalysisReference
-                        }));
+                        }.Concat(additionalReferences).ToArray()));
         }
     }
 }

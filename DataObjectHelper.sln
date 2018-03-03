@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataObjectHelper.Vsix", "Da
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataObjectHelper.Tests", "DataObjectHelper.Tests\DataObjectHelper.Tests.csproj", "{8B99E125-3C2D-4562-99AC-56E57D24A65D}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "DataObjectHelper.Tests.FSharpProject", "DataObjectHelper.Tests.FSharpProject\DataObjectHelper.Tests.FSharpProject.fsproj", "{FCA2B253-584B-4F7E-BD4C-8CE884CF21E6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{8B99E125-3C2D-4562-99AC-56E57D24A65D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8B99E125-3C2D-4562-99AC-56E57D24A65D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8B99E125-3C2D-4562-99AC-56E57D24A65D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FCA2B253-584B-4F7E-BD4C-8CE884CF21E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FCA2B253-584B-4F7E-BD4C-8CE884CF21E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FCA2B253-584B-4F7E-BD4C-8CE884CF21E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FCA2B253-584B-4F7E-BD4C-8CE884CF21E6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
