@@ -16,6 +16,7 @@ namespace DataObjectHelper.Tests
         private static string createWithMethodsAttributeCode;
         private static string productTypeClassCode;
         private static string genericProductTypeClassCode;
+        private static string genericProductTypeWithPropertyOfGenericTypeCode;
 
         static CreateWithMethodsTests()
         {
@@ -56,6 +57,23 @@ namespace DataObjectHelper.Tests
         Name = name;
     }
 }";
+
+            genericProductTypeWithPropertyOfGenericTypeCode =
+@"public struct Maybe<T> {}
+
+public class GenericProductTypeWithGenericPropertyType<TName>
+{
+    public int Age {get;}
+
+    public Maybe<TName> Name {get;}
+
+    public GenericProductTypeWithGenericPropertyType(int age, Maybe<TName> name)
+    {
+        Age = age;
+        Name = name;
+    }
+}";
+
         }
 
         [Test]
@@ -693,6 +711,100 @@ public static class Methods
                         content,
                         SelectSpanWhereCreateWithMethodsAttributeIsApplied,
                         Utilities.GetFsharpTestProjectReference()));
+
+            //Assert
+            Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
+        }
+
+        [Test]
+        public void TestCreateWithMethodsForOpenGenericDataObjectThatHasAPropertyOfGenericType()
+        {
+            //Arrange
+            var methodsClassCode =
+@"[CreateWithMethods(typeof(GenericProductTypeWithGenericPropertyType<>))]
+public static class Methods
+{
+
+}";
+
+            var expectedMethodsClassCodeAfterRefactoring =
+@"[CreateWithMethods(typeof(GenericProductTypeWithGenericPropertyType<>))]
+public static class Methods
+{
+    public static GenericProductTypeWithGenericPropertyType<TName> WithAge<TName>(this GenericProductTypeWithGenericPropertyType<TName> instance, System.Int32 newValue)
+    {
+        return new GenericProductTypeWithGenericPropertyType<TName>(age: newValue, name: instance.Name);
+    }
+
+    public static GenericProductTypeWithGenericPropertyType<TName> WithName<TName>(this GenericProductTypeWithGenericPropertyType<TName> instance, Maybe<TName> newValue)
+    {
+        return new GenericProductTypeWithGenericPropertyType<TName>(age: instance.Age, name: newValue);
+    }
+}";
+            var content =
+                Utilities.MergeParts(
+                    createWithMethodsAttributeCode, genericProductTypeWithPropertyOfGenericTypeCode , methodsClassCode);
+
+            var expectedContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.MergeParts(
+                        createWithMethodsAttributeCode,
+                        genericProductTypeWithPropertyOfGenericTypeCode,
+                        expectedMethodsClassCodeAfterRefactoring));
+
+            //Act
+            var actualContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.ApplyRefactoring(
+                        content,
+                        SelectSpanWhereCreateWithMethodsAttributeIsApplied));
+
+            //Assert
+            Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
+        }
+
+        [Test]
+        public void TestCreateWithMethodsForClosedGenericDataObjectThatHasAPropertyOfGenericType()
+        {
+            //Arrange
+            var methodsClassCode =
+@"[CreateWithMethods(typeof(GenericProductTypeWithGenericPropertyType<System.String>))]
+public static class Methods
+{
+
+}";
+
+            var expectedMethodsClassCodeAfterRefactoring =
+@"[CreateWithMethods(typeof(GenericProductTypeWithGenericPropertyType<System.String>))]
+public static class Methods
+{
+    public static GenericProductTypeWithGenericPropertyType<System.String> WithAge(this GenericProductTypeWithGenericPropertyType<System.String> instance, System.Int32 newValue)
+    {
+        return new GenericProductTypeWithGenericPropertyType<System.String>(age: newValue, name: instance.Name);
+    }
+
+    public static GenericProductTypeWithGenericPropertyType<System.String> WithName(this GenericProductTypeWithGenericPropertyType<System.String> instance, Maybe<System.String> newValue)
+    {
+        return new GenericProductTypeWithGenericPropertyType<System.String>(age: instance.Age, name: newValue);
+    }
+}";
+            var content =
+                Utilities.MergeParts(
+                    createWithMethodsAttributeCode, genericProductTypeWithPropertyOfGenericTypeCode, methodsClassCode);
+
+            var expectedContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.MergeParts(
+                        createWithMethodsAttributeCode,
+                        genericProductTypeWithPropertyOfGenericTypeCode,
+                        expectedMethodsClassCodeAfterRefactoring));
+
+            //Act
+            var actualContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.ApplyRefactoring(
+                        content,
+                        SelectSpanWhereCreateWithMethodsAttributeIsApplied));
 
             //Assert
             Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
