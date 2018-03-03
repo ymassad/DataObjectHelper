@@ -643,6 +643,103 @@ public static class Methods
             Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
         }
 
+        [Test]
+        public void TestCreateMatchMethodsForFSharpModule()
+        {
+            //Arrange
+            var methodsClassCode =
+@"[CreateMatchMethods(typeof(DataObjectHelper.Tests.FSharpProject.Module))]
+public static class Methods
+{
+
+}";
+
+            var expectedMethodsClassCodeAfterRefactoring =
+@"[CreateMatchMethods(typeof (DataObjectHelper.Tests.FSharpProject.Module))]
+public static class Methods
+{
+    public static TResult Match<TResult>(
+        this DataObjectHelper.Tests.FSharpProject.Module.FSharpDiscriminatedUnion instance,
+        System.Func<DataObjectHelper.Tests.FSharpProject.Module.FSharpDiscriminatedUnion.Option1, TResult> option1Case,
+        System.Func<TResult> option2Case)
+    {
+        if (instance is DataObjectHelper.Tests.FSharpProject.Module.FSharpDiscriminatedUnion.Option1 option1)
+            return option1Case(option1);
+        if (instance.IsOption2)
+            return option2Case();
+        throw new System.Exception(""Invalid FSharpDiscriminatedUnion type"");
+    }
+
+    public static void Match(
+        this DataObjectHelper.Tests.FSharpProject.Module.FSharpDiscriminatedUnion instance,
+        System.Action<DataObjectHelper.Tests.FSharpProject.Module.FSharpDiscriminatedUnion.Option1> option1Case,
+        System.Action option2Case)
+    {
+        if (instance is DataObjectHelper.Tests.FSharpProject.Module.FSharpDiscriminatedUnion.Option1 option1)
+        {
+            option1Case(option1);
+            return;
+        }
+
+        if (instance.IsOption2)
+        {
+            option2Case();
+            return;
+        }
+
+        throw new System.Exception(""Invalid FSharpDiscriminatedUnion type"");
+    }
+
+    public static TResult Match<a, TResult>(
+        this DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<a> instance,
+        System.Func<DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<a>.Option1, TResult> option1Case,
+        System.Func<TResult> option2Case)
+    {
+        if (instance is DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<a>.Option1 option1)
+            return option1Case(option1);
+        if (instance.IsOption2)
+            return option2Case();
+        throw new System.Exception(""Invalid GenericFSharpDiscriminatedUnion type"");
+    }
+
+    public static void Match<a>(
+        this DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<a> instance,
+        System.Action<DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<a>.Option1> option1Case,
+        System.Action option2Case)
+    {
+        if (instance is DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<a>.Option1 option1)
+        {
+            option1Case(option1);
+            return;
+        }
+
+        if (instance.IsOption2)
+        {
+            option2Case();
+            return;
+        }
+
+        throw new System.Exception(""Invalid GenericFSharpDiscriminatedUnion type"");
+    }
+}";
+            var content = Utilities.MergeParts(createMatchMethodsAttributeCode, methodsClassCode);
+
+            var expectedContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.MergeParts(createMatchMethodsAttributeCode, expectedMethodsClassCodeAfterRefactoring));
+
+            //Act
+            var actualContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.ApplyRefactoring(
+                        content,
+                        SelectSpanWhereCreateMatchMethodsAttributeIsApplied,
+                        Utilities.GetFsharpTestProjectReference()));
+
+            //Assert
+            Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
+        }
+
         private static TextSpan SelectSpanWhereCreateMatchMethodsAttributeIsApplied(SyntaxNode rootNode)
         {
             return rootNode.DescendantNodes()
