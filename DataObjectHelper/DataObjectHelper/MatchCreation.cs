@@ -152,17 +152,60 @@ namespace DataObjectHelper
 
                     return caseTypes
                         .Where(x => !x.IsAbstract)
-                        .Where(x => HasNoTypeParameters(x))
-                        .Select(x => (Case)new Case.ClassCase(x))
+                        .Select(x => CreateClassCase(doTypeSymbol, x).ChainValue(c => (Case)c))
+                        .ItemsWithValue()
                         .ToArray()
                         .ToMaybe()
                         .If(x => x.Length > 0);
                 });
         }
 
-        private static bool HasNoTypeParameters(INamedTypeSymbol x)
+        private static Maybe<Case.ClassCase> CreateClassCase(
+            INamedTypeSymbol doClassSymbol,
+            INamedTypeSymbol subClassSymbol)
         {
-            return x.TypeParameters.Length == 0;
+            var containingType = subClassSymbol.ContainingType;
+
+            var openDoClassSymbol = doClassSymbol.IsGenericType ? doClassSymbol.ConstructedFrom : doClassSymbol;
+
+            if (containingType == null)
+            {
+                if (subClassSymbol.TypeParameters.Length != doClassSymbol.TypeParameters.Length)
+                    return Maybe.NoValue;
+
+                var baseTypeOfSubClass = subClassSymbol.BaseType;
+
+                if(baseTypeOfSubClass.IsGenericType && baseTypeOfSubClass.TypeArguments.Any(x => x.Kind != SymbolKind.TypeParameter))
+                    return Maybe.NoValue;
+
+                if(!doClassSymbol.IsGenericType || doClassSymbol.IsUnboundGenericType)
+                    return new Case.ClassCase(subClassSymbol);
+
+                return new Case.ClassCase(subClassSymbol.Construct(doClassSymbol.TypeArguments.ToArray()));
+
+            }
+
+            if (containingType.Equals(openDoClassSymbol))
+            {
+                if (HasTypeParameters(subClassSymbol))
+                    return Maybe.NoValue;
+
+                if(!openDoClassSymbol.IsGenericType || openDoClassSymbol.IsUnboundGenericType)
+                    return new Case.ClassCase(subClassSymbol);
+
+
+                var namedTypeSymbol = doClassSymbol.GetMembers()
+                    .OfType<INamedTypeSymbol>().Single(x => x.OriginalDefinition.Equals(subClassSymbol));
+                return new Case.ClassCase(
+                    namedTypeSymbol);
+            }
+
+            return Maybe.NoValue;
+        }
+
+        private static bool HasTypeParameters(INamedTypeSymbol x)
+        {
+            return x.TypeParameters.Length != 0;
         }
 
         public static MethodDeclarationSyntax CreateMatchMethod(
@@ -175,7 +218,7 @@ namespace DataObjectHelper
 
             var classFullname = doClassFullname;
 
-            var firstParameterName = Utilities.MakeFirstLetterSmall(doClassName);
+            var firstParameterName = "instance";
 
             List<SyntaxNodeOrToken> parametersAndCommas = new List<SyntaxNodeOrToken>();
 
@@ -344,7 +387,7 @@ namespace DataObjectHelper
 
             var classFullname = doClassFullname;
 
-            var firstParameterName = Utilities.MakeFirstLetterSmall(doClassName);
+            var firstParameterName = "instance";
 
             List<SyntaxNodeOrToken> parametersAndCommas = new List<SyntaxNodeOrToken>();
 

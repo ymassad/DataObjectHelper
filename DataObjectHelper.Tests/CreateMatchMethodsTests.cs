@@ -17,6 +17,9 @@ namespace DataObjectHelper.Tests
     {
         private static string createMatchMethodsAttributeCode;
         private static string sumTypeClassCode;
+        private static string genericSumTypeClassCode;
+        private static string sumTypeClassWithSubClassesInOuterScopeCode;
+        private static string genericSumTypeClassWithSubClassesInOuterScopeCode;
 
         static CreateMatchMethodsTests()
         {
@@ -37,6 +40,33 @@ namespace DataObjectHelper.Tests
 
     public class Option2 : SumType{}
 }";
+
+            sumTypeClassWithSubClassesInOuterScopeCode =
+@"public abstract class SumType{}
+
+public class Option1 : SumType{}
+
+public class Option2 : SumType{}";
+
+
+
+            genericSumTypeClassCode =
+@"public abstract class GenericSumType<T>
+{
+    public class Option1 : GenericSumType<T>{}
+
+    public class Option2 : GenericSumType<T>{}
+}";
+
+
+            genericSumTypeClassWithSubClassesInOuterScopeCode =
+@"public abstract class GenericSumType<T>{}
+
+public class Option1<T1> : GenericSumType<T1>{}
+
+public class Option2<T2> : GenericSumType<T2>{}
+";
+
         }
 
         [Test]
@@ -50,28 +80,28 @@ public static class Methods
 
 }";
 
-            var expectedMethodsClassCodeAfterRefactoring = 
+            var expectedMethodsClassCodeAfterRefactoring =
 @"[CreateMatchMethods(typeof(SumType))]
 public static class Methods
 {
-    public static TResult Match<TResult>(this Namespace1.SumType sumType, System.Func<Namespace1.SumType.Option1, TResult> option1Case, System.Func<Namespace1.SumType.Option2, TResult> option2Case)
+    public static TResult Match<TResult>(this Namespace1.SumType instance, System.Func<Namespace1.SumType.Option1, TResult> option1Case, System.Func<Namespace1.SumType.Option2, TResult> option2Case)
     {
-        if (sumType is Namespace1.SumType.Option1 option1)
+        if (instance is Namespace1.SumType.Option1 option1)
             return option1Case(option1);
-        if (sumType is Namespace1.SumType.Option2 option2)
+        if (instance is Namespace1.SumType.Option2 option2)
             return option2Case(option2);
         throw new System.Exception(""Invalid SumType type"");
     }
 
-    public static void Match(this Namespace1.SumType sumType, System.Action<Namespace1.SumType.Option1> option1Case, System.Action<Namespace1.SumType.Option2> option2Case)
+    public static void Match(this Namespace1.SumType instance, System.Action<Namespace1.SumType.Option1> option1Case, System.Action<Namespace1.SumType.Option2> option2Case)
     {
-        if (sumType is Namespace1.SumType.Option1 option1)
+        if (instance is Namespace1.SumType.Option1 option1)
         {
             option1Case(option1);
             return;
         }
 
-        if (sumType is Namespace1.SumType.Option2 option2)
+        if (instance is Namespace1.SumType.Option2 option2)
         {
             option2Case(option2);
             return;
@@ -98,7 +128,6 @@ public static class Methods
             Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
         }
 
-
         [Test]
         public void TestCreateMatchMethodsWhereClassIsNotInsideANamespace()
         {
@@ -114,24 +143,24 @@ public static class Methods
 @"[CreateMatchMethods(typeof(SumType))]
 public static class Methods
 {
-    public static TResult Match<TResult>(this SumType sumType, System.Func<SumType.Option1, TResult> option1Case, System.Func<SumType.Option2, TResult> option2Case)
+    public static TResult Match<TResult>(this SumType instance, System.Func<SumType.Option1, TResult> option1Case, System.Func<SumType.Option2, TResult> option2Case)
     {
-        if (sumType is SumType.Option1 option1)
+        if (instance is SumType.Option1 option1)
             return option1Case(option1);
-        if (sumType is SumType.Option2 option2)
+        if (instance is SumType.Option2 option2)
             return option2Case(option2);
         throw new System.Exception(""Invalid SumType type"");
     }
 
-    public static void Match(this SumType sumType, System.Action<SumType.Option1> option1Case, System.Action<SumType.Option2> option2Case)
+    public static void Match(this SumType instance, System.Action<SumType.Option1> option1Case, System.Action<SumType.Option2> option2Case)
     {
-        if (sumType is SumType.Option1 option1)
+        if (instance is SumType.Option1 option1)
         {
             option1Case(option1);
             return;
         }
 
-        if (sumType is SumType.Option2 option2)
+        if (instance is SumType.Option2 option2)
         {
             option2Case(option2);
             return;
@@ -146,6 +175,282 @@ public static class Methods
             var expectedContentAfterRefactoring =
                 NormalizeCode(
                     MergeParts(createMatchMethodsAttributeCode, sumTypeClassCode, expectedMethodsClassCodeAfterRefactoring));
+
+            //Act
+            var actualContentAfterRefactoring = NormalizeCode(ApplyRefactoring(content, SelectSpanWhereCreateMatchMethodsAttributeIsApplied));
+
+            //Assert
+            Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
+        }
+
+        [Test]
+        public void TestCreateMatchMethodsWhereSubclassesAreInOuterScope()
+        {
+            //Arrange
+            var methodsClassCode =
+@"[CreateMatchMethods(typeof(SumType))]
+public static class Methods
+{
+
+}";
+
+            var expectedMethodsClassCodeAfterRefactoring =
+@"[CreateMatchMethods(typeof(SumType))]
+public static class Methods
+{
+    public static TResult Match<TResult>(this SumType instance, System.Func<Option1, TResult> option1Case, System.Func<Option2, TResult> option2Case)
+    {
+        if (instance is Option1 option1)
+            return option1Case(option1);
+        if (instance is Option2 option2)
+            return option2Case(option2);
+        throw new System.Exception(""Invalid SumType type"");
+    }
+
+    public static void Match(this SumType instance, System.Action<Option1> option1Case, System.Action<Option2> option2Case)
+    {
+        if (instance is Option1 option1)
+        {
+            option1Case(option1);
+            return;
+        }
+
+        if (instance is Option2 option2)
+        {
+            option2Case(option2);
+            return;
+        }
+
+        throw new System.Exception(""Invalid SumType type"");
+    }
+}";
+            var content =
+                MergeParts(createMatchMethodsAttributeCode, sumTypeClassWithSubClassesInOuterScopeCode, methodsClassCode);
+
+            var expectedContentAfterRefactoring =
+                NormalizeCode(
+                    MergeParts(createMatchMethodsAttributeCode, sumTypeClassWithSubClassesInOuterScopeCode, expectedMethodsClassCodeAfterRefactoring));
+
+            //Act
+            var actualContentAfterRefactoring = NormalizeCode(ApplyRefactoring(content, SelectSpanWhereCreateMatchMethodsAttributeIsApplied));
+
+            //Assert
+            Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
+        }
+
+
+        [Test]
+        public void TestCreateMatchMethodsForOpenGenericClass()
+        {
+            //Arrange
+            var methodsClassCode =
+@"[CreateMatchMethods(typeof(GenericSumType<>))]
+public static class Methods
+{
+
+}";
+
+            var expectedMethodsClassCodeAfterRefactoring =
+@"[CreateMatchMethods(typeof(GenericSumType<>))]
+public static class Methods
+{
+    public static TResult Match<T, TResult>(this GenericSumType<T> instance, System.Func<GenericSumType<T>.Option1, TResult> option1Case, System.Func<GenericSumType<T>.Option2, TResult> option2Case)
+    {
+        if (instance is GenericSumType<T>.Option1 option1)
+            return option1Case(option1);
+        if (instance is GenericSumType<T>.Option2 option2)
+            return option2Case(option2);
+        throw new System.Exception(""Invalid GenericSumType type"");
+    }
+
+    public static void Match<T>(this GenericSumType<T> instance, System.Action<GenericSumType<T>.Option1> option1Case, System.Action<GenericSumType<T>.Option2> option2Case)
+    {
+        if (instance is GenericSumType<T>.Option1 option1)
+        {
+            option1Case(option1);
+            return;
+        }
+
+        if (instance is GenericSumType<T>.Option2 option2)
+        {
+            option2Case(option2);
+            return;
+        }
+
+        throw new System.Exception(""Invalid GenericSumType type"");
+    }
+}";
+            var content =
+                MergeParts(createMatchMethodsAttributeCode, genericSumTypeClassCode, methodsClassCode);
+
+            var expectedContentAfterRefactoring =
+                NormalizeCode(
+                    MergeParts(createMatchMethodsAttributeCode, genericSumTypeClassCode, expectedMethodsClassCodeAfterRefactoring));
+
+            //Act
+            var actualContentAfterRefactoring = NormalizeCode(ApplyRefactoring(content, SelectSpanWhereCreateMatchMethodsAttributeIsApplied));
+
+            //Assert
+            Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
+        }
+
+        [Test]
+        public void TestCreateMatchMethodsForClosedGenericClass()
+        {
+            //Arrange
+            var methodsClassCode =
+@"[CreateMatchMethods(typeof(GenericSumType<System.String>))]
+public static class Methods
+{
+
+}";
+
+            var expectedMethodsClassCodeAfterRefactoring =
+@"[CreateMatchMethods(typeof(GenericSumType<System.String>))]
+public static class Methods
+{
+    public static TResult Match<TResult>(this GenericSumType<System.String> instance, System.Func<GenericSumType<System.String>.Option1, TResult> option1Case, System.Func<GenericSumType<System.String>.Option2, TResult> option2Case)
+    {
+        if (instance is GenericSumType<System.String>.Option1 option1)
+            return option1Case(option1);
+        if (instance is GenericSumType<System.String>.Option2 option2)
+            return option2Case(option2);
+        throw new System.Exception(""Invalid GenericSumType type"");
+    }
+
+    public static void Match(this GenericSumType<System.String> instance, System.Action<GenericSumType<System.String>.Option1> option1Case, System.Action<GenericSumType<System.String>.Option2> option2Case)
+    {
+        if (instance is GenericSumType<System.String>.Option1 option1)
+        {
+            option1Case(option1);
+            return;
+        }
+
+        if (instance is GenericSumType<System.String>.Option2 option2)
+        {
+            option2Case(option2);
+            return;
+        }
+
+        throw new System.Exception(""Invalid GenericSumType type"");
+    }
+}";
+            var content =
+                MergeParts(createMatchMethodsAttributeCode, genericSumTypeClassCode, methodsClassCode);
+
+            var expectedContentAfterRefactoring =
+                NormalizeCode(
+                    MergeParts(createMatchMethodsAttributeCode, genericSumTypeClassCode, expectedMethodsClassCodeAfterRefactoring));
+
+            //Act
+            var actualContentAfterRefactoring = NormalizeCode(ApplyRefactoring(content, SelectSpanWhereCreateMatchMethodsAttributeIsApplied));
+
+            //Assert
+            Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
+        }
+
+        [Test]
+        public void TestCreateMatchMethodsForOpenGenericClassWhoseSubclassesAreInOuterScope()
+        {
+            //Arrange
+            var methodsClassCode =
+@"[CreateMatchMethods(typeof(GenericSumType<>))]
+public static class Methods
+{
+
+}";
+
+            var expectedMethodsClassCodeAfterRefactoring =
+@"[CreateMatchMethods(typeof(GenericSumType<>))]
+public static class Methods
+{
+    public static TResult Match<T, TResult>(this GenericSumType<T> instance, System.Func<Option1<T>, TResult> option1Case, System.Func<Option2<T>, TResult> option2Case)
+    {
+        if (instance is Option1<T> option1)
+            return option1Case(option1);
+        if (instance is Option2<T> option2)
+            return option2Case(option2);
+        throw new System.Exception(""Invalid GenericSumType type"");
+    }
+
+    public static void Match<T>(this GenericSumType<T> instance, System.Action<Option1<T>> option1Case, System.Action<Option2<T>> option2Case)
+    {
+        if (instance is Option1<T> option1)
+        {
+            option1Case(option1);
+            return;
+        }
+
+        if (instance is Option2<T> option2)
+        {
+            option2Case(option2);
+            return;
+        }
+
+        throw new System.Exception(""Invalid GenericSumType type"");
+    }
+}";
+            var content =
+                MergeParts(createMatchMethodsAttributeCode, genericSumTypeClassWithSubClassesInOuterScopeCode, methodsClassCode);
+
+            var expectedContentAfterRefactoring =
+                NormalizeCode(
+                    MergeParts(createMatchMethodsAttributeCode, genericSumTypeClassWithSubClassesInOuterScopeCode, expectedMethodsClassCodeAfterRefactoring));
+
+            //Act
+            var actualContentAfterRefactoring = NormalizeCode(ApplyRefactoring(content, SelectSpanWhereCreateMatchMethodsAttributeIsApplied));
+
+            //Assert
+            Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
+        }
+
+        [Test]
+        public void TestCreateMatchMethodsForClosedGenericClassWhoseSubclassesAreInOuterScope()
+        {
+            //Arrange
+            var methodsClassCode =
+@"[CreateMatchMethods(typeof(GenericSumType<System.String>))]
+public static class Methods
+{
+
+}";
+
+            var expectedMethodsClassCodeAfterRefactoring =
+@"[CreateMatchMethods(typeof(GenericSumType<System.String>))]
+public static class Methods
+{
+    public static TResult Match<TResult>(this GenericSumType<System.String> instance, System.Func<Option1<System.String>, TResult> option1Case, System.Func<Option2<System.String>, TResult> option2Case)
+    {
+        if (instance is Option1<System.String> option1)
+            return option1Case(option1);
+        if (instance is Option2<System.String> option2)
+            return option2Case(option2);
+        throw new System.Exception(""Invalid GenericSumType type"");
+    }
+
+    public static void Match(this GenericSumType<System.String> instance, System.Action<Option1<System.String>> option1Case, System.Action<Option2<System.String>> option2Case)
+    {
+        if (instance is Option1<System.String> option1)
+        {
+            option1Case(option1);
+            return;
+        }
+
+        if (instance is Option2<System.String> option2)
+        {
+            option2Case(option2);
+            return;
+        }
+
+        throw new System.Exception(""Invalid GenericSumType type"");
+    }
+}";
+            var content =
+                MergeParts(createMatchMethodsAttributeCode, genericSumTypeClassWithSubClassesInOuterScopeCode, methodsClassCode);
+
+            var expectedContentAfterRefactoring =
+                NormalizeCode(
+                    MergeParts(createMatchMethodsAttributeCode, genericSumTypeClassWithSubClassesInOuterScopeCode, expectedMethodsClassCodeAfterRefactoring));
 
             //Act
             var actualContentAfterRefactoring = NormalizeCode(ApplyRefactoring(content, SelectSpanWhereCreateMatchMethodsAttributeIsApplied));
