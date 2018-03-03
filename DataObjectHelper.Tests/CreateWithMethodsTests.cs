@@ -156,7 +156,6 @@ public static class Methods
             Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
         }
 
-
         [Test]
         public void TestCreateWithMethodsForOpenGenericDataObject()
         {
@@ -199,6 +198,204 @@ public static class Methods
                     Utilities.ApplyRefactoring(
                         content,
                         SelectSpanWhereCreateWithMethodsAttributeIsApplied));
+
+            //Assert
+            Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
+        }
+
+        [Test]
+        public void TestCreateWithMethodsForClosedGenericDataObject()
+        {
+            //Arrange
+            var methodsClassCode =
+@"[CreateWithMethods(typeof(GenericProductType<System.String>))]
+public static class Methods
+{
+
+}";
+
+            var expectedMethodsClassCodeAfterRefactoring =
+@"[CreateWithMethods(typeof(GenericProductType<System.String>))]
+public static class Methods
+{
+    public static GenericProductType<System.String> WithAge(this GenericProductType<System.String> instance, System.Int32 newValue)
+    {
+        return new GenericProductType<System.String>(age: newValue, name: instance.Name);
+    }
+
+    public static GenericProductType<System.String> WithName(this GenericProductType<System.String> instance, System.String newValue)
+    {
+        return new GenericProductType<System.String>(age: instance.Age, name: newValue);
+    }
+}";
+            var content =
+                Utilities.MergeParts(
+                    createWithMethodsAttributeCode, genericProductTypeClassCode, methodsClassCode);
+
+            var expectedContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.MergeParts(
+                        createWithMethodsAttributeCode,
+                        genericProductTypeClassCode,
+                        expectedMethodsClassCodeAfterRefactoring));
+
+            //Act
+            var actualContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.ApplyRefactoring(
+                        content,
+                        SelectSpanWhereCreateWithMethodsAttributeIsApplied));
+
+            //Assert
+            Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
+        }
+
+        [Test]
+        public void TestCreateWithMethodsForFSharpRecords()
+        {
+            //Arrange
+            var methodsClassCode =
+@"[CreateWithMethods(typeof(DataObjectHelper.Tests.FSharpProject.Module.FSharpRecord))]
+public static class Methods
+{
+
+}";
+
+            var expectedMethodsClassCodeAfterRefactoring =
+@"[CreateWithMethods(typeof(DataObjectHelper.Tests.FSharpProject.Module.FSharpRecord))]
+public static class Methods
+{
+    public static DataObjectHelper.Tests.FSharpProject.Module.FSharpRecord WithAge(
+        this DataObjectHelper.Tests.FSharpProject.Module.FSharpRecord instance,
+        System.Int32 newValue)
+    {
+        return new DataObjectHelper.Tests.FSharpProject.Module.FSharpRecord(age: newValue, name: instance.Name);
+    }
+
+    public static DataObjectHelper.Tests.FSharpProject.Module.FSharpRecord WithName(this DataObjectHelper.Tests.FSharpProject.Module.FSharpRecord instance, System.String newValue)
+    {
+        return new DataObjectHelper.Tests.FSharpProject.Module.FSharpRecord(age: instance.Age, name: newValue);
+    }
+}";
+            var content =
+                Utilities.MergeParts(
+                    createWithMethodsAttributeCode, methodsClassCode);
+
+            var expectedContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.MergeParts(
+                        createWithMethodsAttributeCode,
+                        expectedMethodsClassCodeAfterRefactoring));
+
+            //Act
+            var actualContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.ApplyRefactoring(
+                        content,
+                        SelectSpanWhereCreateWithMethodsAttributeIsApplied,
+                        Utilities.GetFsharpTestProjectReference()));
+
+            //Assert
+            Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
+        }
+
+        [Test]
+        public void TestCreateWithMethodsForOpenGenericFSharpRecords()
+        {
+            //Arrange
+            var methodsClassCode =
+                @"[CreateWithMethods(typeof(DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpRecord<>))]
+public static class Methods
+{
+
+}";
+
+            var expectedMethodsClassCodeAfterRefactoring =
+                @"[CreateWithMethods(typeof(DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpRecord<>))]
+public static class Methods
+{
+    public static DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpRecord<a> WithAge<a>(
+        this DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpRecord<a> instance,
+        System.Int32 newValue)
+    {
+        return new DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpRecord<a>(age: newValue, name: instance.Name);
+    }
+
+    public static DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpRecord<a> WithName<a>(
+        this DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpRecord<a> instance,
+        a newValue)
+    {
+        return new DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpRecord<a>(age: instance.Age, name: newValue);
+    }
+}";
+            var content =
+                Utilities.MergeParts(
+                    createWithMethodsAttributeCode, methodsClassCode);
+
+            var expectedContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.MergeParts(
+                        createWithMethodsAttributeCode,
+                        expectedMethodsClassCodeAfterRefactoring));
+
+            //Act
+            var actualContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.ApplyRefactoring(
+                        content,
+                        SelectSpanWhereCreateWithMethodsAttributeIsApplied,
+                        Utilities.GetFsharpTestProjectReference()));
+
+            //Assert
+            Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
+        }
+
+        [Test]
+        public void TestCreateWithMethodsForClosedGenericFSharpRecords()
+        {
+            //Arrange
+            var methodsClassCode =
+@"[CreateWithMethods(typeof(DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpRecord<System.String>))]
+public static class Methods
+{
+
+}";
+
+            var expectedMethodsClassCodeAfterRefactoring =
+@"[CreateWithMethods(typeof(DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpRecord<System.String>))]
+public static class Methods
+{
+    public static DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpRecord<System.String> WithAge(
+        this DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpRecord<System.String> instance,
+        System.Int32 newValue)
+    {
+        return new DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpRecord<System.String>(age: newValue, name: instance.Name);
+    }
+
+    public static DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpRecord<System.String> WithName(
+        this DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpRecord<System.String> instance,
+        System.String newValue)
+    {
+        return new DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpRecord<System.String>(age: instance.Age, name: newValue);
+    }
+}";
+            var content =
+                Utilities.MergeParts(
+                    createWithMethodsAttributeCode, methodsClassCode);
+
+            var expectedContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.MergeParts(
+                        createWithMethodsAttributeCode,
+                        expectedMethodsClassCodeAfterRefactoring));
+
+            //Act
+            var actualContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.ApplyRefactoring(
+                        content,
+                        SelectSpanWhereCreateWithMethodsAttributeIsApplied,
+                        Utilities.GetFsharpTestProjectReference()));
 
             //Assert
             Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
