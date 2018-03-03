@@ -401,6 +401,159 @@ public static class Methods
             Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
         }
 
+        [Test]
+        public void TestCreateWithMethodsForFSharpDiscriminatedUnionCase()
+        {
+            //Arrange
+            var methodsClassCode =
+@"[CreateWithMethods(typeof(DataObjectHelper.Tests.FSharpProject.Module.FSharpDiscriminatedUnion.Option1))]
+public static class Methods
+{
+
+}";
+
+            var expectedMethodsClassCodeAfterRefactoring =
+@"[CreateWithMethods(typeof(DataObjectHelper.Tests.FSharpProject.Module.FSharpDiscriminatedUnion.Option1))]
+public static class Methods
+{
+    public static DataObjectHelper.Tests.FSharpProject.Module.FSharpDiscriminatedUnion.Option1 WithAge(
+        this DataObjectHelper.Tests.FSharpProject.Module.FSharpDiscriminatedUnion.Option1 instance,
+        System.Int32 newValue)
+    {
+        return (DataObjectHelper.Tests.FSharpProject.Module.FSharpDiscriminatedUnion.Option1)DataObjectHelper.Tests.FSharpProject.Module.FSharpDiscriminatedUnion.NewOption1(age: newValue, name: instance.Name);
+    }
+
+    public static DataObjectHelper.Tests.FSharpProject.Module.FSharpDiscriminatedUnion.Option1 WithName(
+        this DataObjectHelper.Tests.FSharpProject.Module.FSharpDiscriminatedUnion.Option1 instance,
+        System.String newValue)
+    {
+        return (DataObjectHelper.Tests.FSharpProject.Module.FSharpDiscriminatedUnion.Option1)DataObjectHelper.Tests.FSharpProject.Module.FSharpDiscriminatedUnion.NewOption1(age: instance.Age, name: newValue);
+    }
+}";
+            var content =
+                Utilities.MergeParts(
+                    createWithMethodsAttributeCode, methodsClassCode);
+
+            var expectedContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.MergeParts(
+                        createWithMethodsAttributeCode,
+                        expectedMethodsClassCodeAfterRefactoring));
+
+            //Act
+            var actualContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.ApplyRefactoring(
+                        content,
+                        SelectSpanWhereCreateWithMethodsAttributeIsApplied,
+                        Utilities.GetFsharpTestProjectReference()));
+
+            //Assert
+            Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
+        }
+
+        [Test]
+        public void TestCreateWithMethodsForOpenGenericFSharpDiscriminatedUnionCase()
+        {
+            //Arrange
+            var methodsClassCode =
+@"[CreateWithMethods(typeof(DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<>.Option1))]
+public static class Methods
+{
+
+}";
+
+            var expectedMethodsClassCodeAfterRefactoring =
+@"[CreateWithMethods(typeof(DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<>.Option1))]
+public static class Methods
+{
+    public static DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<a>.Option1 WithAge<a>(
+        this DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<a>.Option1 instance,
+        System.Int32 newValue)
+    {
+        return (DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<a>.Option1)DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<a>.NewOption1(age: newValue, name: instance.Name);
+    }
+
+    public static DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<a>.Option1 WithName<a>(
+        this DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<a>.Option1 instance,
+        a newValue)
+    {
+        return (DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<a>.Option1)DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<a>.NewOption1(age: instance.Age, name: newValue);
+    }
+}";
+            var content =
+                Utilities.MergeParts(
+                    createWithMethodsAttributeCode, methodsClassCode);
+
+            var expectedContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.MergeParts(
+                        createWithMethodsAttributeCode,
+                        expectedMethodsClassCodeAfterRefactoring));
+
+            //Act
+            var actualContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.ApplyRefactoring(
+                        content,
+                        SelectSpanWhereCreateWithMethodsAttributeIsApplied,
+                        Utilities.GetFsharpTestProjectReference()));
+
+            //Assert
+            Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
+        }
+
+        [Test]
+        public void TestCreateWithMethodsForClosedGenericFSharpDiscriminatedUnionCase()
+        {
+            //Arrange
+            var methodsClassCode =
+@"[CreateWithMethods(typeof(DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<System.String>.Option1))]
+public static class Methods
+{
+
+}";
+
+            var expectedMethodsClassCodeAfterRefactoring =
+@"[CreateWithMethods(typeof(DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<System.String>.Option1))]
+public static class Methods
+{
+    public static DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<System.String>.Option1 WithAge(
+        this DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<System.String>.Option1 instance,
+        System.Int32 newValue)
+    {
+        return (DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<System.String>.Option1)DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<System.String>.NewOption1(age: newValue, name: instance.Name);
+    }
+
+    public static DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<System.String>.Option1 WithName(
+        this DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<System.String>.Option1 instance,
+        System.String newValue)
+    {
+        return (DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<System.String>.Option1)DataObjectHelper.Tests.FSharpProject.Module.GenericFSharpDiscriminatedUnion<System.String>.NewOption1(age: instance.Age, name: newValue);
+    }
+}";
+            var content =
+                Utilities.MergeParts(
+                    createWithMethodsAttributeCode, methodsClassCode);
+
+            var expectedContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.MergeParts(
+                        createWithMethodsAttributeCode,
+                        expectedMethodsClassCodeAfterRefactoring));
+
+            //Act
+            var actualContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.ApplyRefactoring(
+                        content,
+                        SelectSpanWhereCreateWithMethodsAttributeIsApplied,
+                        Utilities.GetFsharpTestProjectReference()));
+
+            //Assert
+            Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
+        }
+
 
         private static TextSpan SelectSpanWhereCreateWithMethodsAttributeIsApplied(SyntaxNode rootNode)
         {
