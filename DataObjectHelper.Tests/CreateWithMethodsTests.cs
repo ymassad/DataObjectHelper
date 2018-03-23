@@ -17,6 +17,7 @@ namespace DataObjectHelper.Tests
         private static string productTypeClassCode;
         private static string genericProductTypeClassCode;
         private static string genericProductTypeWithPropertyOfGenericTypeCode;
+        private static string productTypeWithStaticPropertiesClassCode;
 
         static CreateWithMethodsTests()
         {
@@ -42,6 +43,23 @@ namespace DataObjectHelper.Tests
         Age = age;
         Name = name;
     }
+}";
+
+            productTypeWithStaticPropertiesClassCode =
+                @"public class ProductTypeWithStaticProperties
+{
+    public int Age {get;}
+
+    public string Name {get;}
+
+    public ProductTypeWithStaticProperties(int age, string name)
+    {
+        Age = age;
+        Name = name;
+    }
+
+    public static string StaticProperty {get;} = ""Hello"";
+
 }";
 
             genericProductTypeClassCode =
@@ -809,6 +827,54 @@ public static class Methods
             //Assert
             Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
         }
+
+        [Test]
+        public void TestCreateWithMethodsWhereClassHasStaticProperties()
+        {
+            //Arrange
+            var methodsClassCode =
+                @"[CreateWithMethods(typeof(ProductTypeWithStaticProperties))]
+public static class Methods
+{
+
+}";
+
+            var expectedMethodsClassCodeAfterRefactoring =
+                @"[CreateWithMethods(typeof(ProductTypeWithStaticProperties))]
+public static class Methods
+{
+    public static ProductTypeWithStaticProperties WithAge(this ProductTypeWithStaticProperties instance, System.Int32 newValue)
+    {
+        return new ProductTypeWithStaticProperties(age: newValue, name: instance.Name);
+    }
+
+    public static ProductTypeWithStaticProperties WithName(this ProductTypeWithStaticProperties instance, System.String newValue)
+    {
+        return new ProductTypeWithStaticProperties(age: instance.Age, name: newValue);
+    }
+}";
+            var content =
+                Utilities.MergeParts(
+                    createWithMethodsAttributeCode, productTypeWithStaticPropertiesClassCode, methodsClassCode);
+
+            var expectedContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.MergeParts(
+                        createWithMethodsAttributeCode,
+                        productTypeWithStaticPropertiesClassCode,
+                        expectedMethodsClassCodeAfterRefactoring));
+
+            //Act
+            var actualContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.ApplyRefactoring(
+                        content,
+                        SelectSpanWhereCreateWithMethodsAttributeIsApplied));
+
+            //Assert
+            Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
+        }
+
 
         private static TextSpan SelectSpanWhereCreateWithMethodsAttributeIsApplied(SyntaxNode rootNode)
         {

@@ -115,7 +115,7 @@ namespace DataObjectHelper
 
         private static IPropertySymbol[] GetDataObjectProperties(INamedTypeSymbol doTypeSymbol)
         {
-            var props = doTypeSymbol.GetMembers().OfType<IPropertySymbol>().ToList();
+            var props = doTypeSymbol.GetMembers().OfType<IPropertySymbol>().Where(x => !x.IsStatic).ToList();
 
             if (doTypeSymbol.BaseType != null)
             {
