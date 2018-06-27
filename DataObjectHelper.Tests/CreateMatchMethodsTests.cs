@@ -747,5 +747,175 @@ public static class Methods
                 .Single(x => x.Name is SimpleNameSyntax name && name.Identifier.Text == "CreateMatchMethods")
                 .Span;
         }
+
+        private static TextSpan SelectSpanWhereClassIsDeclared (SyntaxNode rootNode, string className)
+        {
+            return rootNode.DescendantNodes()
+                .OfType<ClassDeclarationSyntax>()
+                .Single(x => x.Identifier.Text == className)
+                .Span;
+        }
+
+        [Test]
+        public void TestCreateMatchMethodsByApplyingRefactoringOnTheSumTypeClassItselfAndExtensionMethodsClassDoesNotExist()
+        {
+            //Arrange
+            var expectedMethodsClassCodeAfterRefactoring =
+                @"[CreateMatchMethods(typeof(SumType))]
+public static class SumTypeExtensionMethods
+{
+    public static TResult Match<TResult>(this SumType instance, System.Func<SumType.Option1, TResult> option1Case, System.Func<SumType.Option2, TResult> option2Case)
+    {
+        if (instance is SumType.Option1 option1)
+            return option1Case(option1);
+        if (instance is SumType.Option2 option2)
+            return option2Case(option2);
+        throw new System.Exception(""Invalid SumType type"");
+    }
+
+    public static void Match(this SumType instance, System.Action<SumType.Option1> option1Case, System.Action<SumType.Option2> option2Case)
+    {
+        if (instance is SumType.Option1 option1)
+        {
+            option1Case(option1);
+            return;
+        }
+
+        if (instance is SumType.Option2 option2)
+        {
+            option2Case(option2);
+            return;
+        }
+
+        throw new System.Exception(""Invalid SumType type"");
+    }
+}";
+            var content = Utilities.MergeParts(createMatchMethodsAttributeCode, sumTypeClassCode);
+
+            var expectedContentAfterRefactoring = Utilities.NormalizeCode(
+                Utilities.MergeParts(createMatchMethodsAttributeCode, sumTypeClassCode,
+                    expectedMethodsClassCodeAfterRefactoring));
+
+            //Act
+            var actualContentAfterRefactoring =
+                Utilities.NormalizeCode(Utilities.ApplyRefactoring(content,
+                    x => SelectSpanWhereClassIsDeclared(x, "SumType")));
+
+            //Assert
+            Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
+        }
+
+        [Test]
+        public void TestCreateMatchMethodsByApplyingRefactoringOnTheSumTypeClassItselfAndExtensionMethodsClassExistsButIsNotDecoratedWithAttribute()
+        {
+            //Arrange
+            var methodsClassCode =
+                @"
+public static class SumTypeExtensionMethods
+{
+
+}";
+
+            var expectedMethodsClassCodeAfterRefactoring =
+                @"[CreateMatchMethods(typeof(SumType))]
+public static class SumTypeExtensionMethods
+{
+    public static TResult Match<TResult>(this SumType instance, System.Func<SumType.Option1, TResult> option1Case, System.Func<SumType.Option2, TResult> option2Case)
+    {
+        if (instance is SumType.Option1 option1)
+            return option1Case(option1);
+        if (instance is SumType.Option2 option2)
+            return option2Case(option2);
+        throw new System.Exception(""Invalid SumType type"");
+    }
+
+    public static void Match(this SumType instance, System.Action<SumType.Option1> option1Case, System.Action<SumType.Option2> option2Case)
+    {
+        if (instance is SumType.Option1 option1)
+        {
+            option1Case(option1);
+            return;
+        }
+
+        if (instance is SumType.Option2 option2)
+        {
+            option2Case(option2);
+            return;
+        }
+
+        throw new System.Exception(""Invalid SumType type"");
+    }
+}";
+            var content = Utilities.MergeParts(createMatchMethodsAttributeCode, sumTypeClassCode, methodsClassCode);
+
+            var expectedContentAfterRefactoring = Utilities.NormalizeCode(
+                Utilities.MergeParts(createMatchMethodsAttributeCode, sumTypeClassCode,
+                    expectedMethodsClassCodeAfterRefactoring));
+
+            //Act
+            var actualContentAfterRefactoring =
+                Utilities.NormalizeCode(Utilities.ApplyRefactoring(content,
+                    x => SelectSpanWhereClassIsDeclared(x , "SumType")));
+
+            //Assert
+            Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
+        }
+
+        [Test]
+        public void TestCreateMatchMethodsByApplyingRefactoringOnTheSumTypeClassItselfAndExtensionMethodsClassExistsAndIsDecoratedWithAttribute()
+        {
+            //Arrange
+            var methodsClassCode =
+                @"[CreateMatchMethods(typeof(SumType))]
+public static class SumTypeExtensionMethods
+{
+
+}";
+
+            var expectedMethodsClassCodeAfterRefactoring =
+                @"[CreateMatchMethods(typeof(SumType))]
+public static class SumTypeExtensionMethods
+{
+    public static TResult Match<TResult>(this SumType instance, System.Func<SumType.Option1, TResult> option1Case, System.Func<SumType.Option2, TResult> option2Case)
+    {
+        if (instance is SumType.Option1 option1)
+            return option1Case(option1);
+        if (instance is SumType.Option2 option2)
+            return option2Case(option2);
+        throw new System.Exception(""Invalid SumType type"");
+    }
+
+    public static void Match(this SumType instance, System.Action<SumType.Option1> option1Case, System.Action<SumType.Option2> option2Case)
+    {
+        if (instance is SumType.Option1 option1)
+        {
+            option1Case(option1);
+            return;
+        }
+
+        if (instance is SumType.Option2 option2)
+        {
+            option2Case(option2);
+            return;
+        }
+
+        throw new System.Exception(""Invalid SumType type"");
+    }
+}";
+            var content = Utilities.MergeParts(createMatchMethodsAttributeCode, sumTypeClassCode, methodsClassCode);
+
+            var expectedContentAfterRefactoring = Utilities.NormalizeCode(
+                Utilities.MergeParts(createMatchMethodsAttributeCode, sumTypeClassCode,
+                    expectedMethodsClassCodeAfterRefactoring));
+
+            //Act
+            var actualContentAfterRefactoring =
+                Utilities.NormalizeCode(Utilities.ApplyRefactoring(content,
+                    x => SelectSpanWhereClassIsDeclared(x, "SumType")));
+
+            //Assert
+            Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
+        }
+
     }
 }

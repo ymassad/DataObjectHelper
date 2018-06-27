@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace DataObjectHelper
 {
@@ -155,6 +158,11 @@ namespace DataObjectHelper
                 return false;
 
             return condition(maybe.GetValue());
+        }
+
+        public static bool IsStatic(this ClassDeclarationSyntax method)
+        {
+            return method.Modifiers.Any(SyntaxKind.StaticKeyword);
         }
     }
 }

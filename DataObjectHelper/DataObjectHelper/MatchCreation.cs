@@ -59,6 +59,98 @@ namespace DataObjectHelper
             return solutionToReturn;
         }
 
+        public static async Task<Solution> CreateMatchMethods(
+            Document document, ClassDeclarationSyntax classSyntax, SyntaxNode root, CancellationToken cancellationToken)
+        {
+            AttributeSyntax CreateMatchMethodAttribute(SyntaxAnnotation syntaxAnnotation)
+            {
+                return SyntaxFactory.Attribute(
+                    SyntaxFactory.IdentifierName("CreateMatchMethods"),
+                    SyntaxFactory.AttributeArgumentList(
+                        SyntaxFactory.SeparatedList(new[]
+                        {
+                            SyntaxFactory.AttributeArgument(
+                                SyntaxFactory.TypeOfExpression(
+                                    SyntaxFactory.IdentifierName(classSyntax.Identifier.Text))),
+                        }))).WithAdditionalAnnotations(syntaxAnnotation);
+            }
+
+            var originalSolution = document.Project.Solution;
+
+            var staticExtensionsClassName = classSyntax.Identifier.Text + "ExtensionMethods";
+
+            var annotationForAttributeSyntax = new SyntaxAnnotation();
+
+
+            var hostClass =
+                classSyntax.Parent.ChildNodes().OfType<ClassDeclarationSyntax>()
+                    .Where(x => x.IsStatic() && x.Identifier.Text == staticExtensionsClassName)
+                    .FirstOrNoValue();
+
+            if (hostClass.HasNoValue)
+            {
+                var newHostClass =
+                    Utilities
+                        .CreateEmptyPublicStaticClass(staticExtensionsClassName)
+                        .WithAttributeLists(SyntaxFactory.List(new[]
+                        {
+                            SyntaxFactory.AttributeList(SyntaxFactory.SeparatedList(new[]
+                            {
+                                CreateMatchMethodAttribute(annotationForAttributeSyntax),
+                            }))
+                        }));
+
+                var newSolutionWithHostClassAdded = originalSolution.WithDocumentSyntaxRoot(document.Id,
+                    root.InsertNodesAfter(classSyntax, new[] { newHostClass }));
+
+                var newDocument = newSolutionWithHostClassAdded.GetDocument(document.Id);
+
+                var newDocumentRoot = await newDocument.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+                return await CreateMatchMethods(
+                    newDocument,
+                    (AttributeSyntax)newDocumentRoot.GetAnnotatedNodes(annotationForAttributeSyntax).Single(),
+                    newDocumentRoot,
+                    cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                var hostClassValue = hostClass.GetValue();
+                var existingAttribute = hostClassValue.AttributeLists.SelectMany(x => x.Attributes)
+                    .FirstOrNoValue(Utilities.IsCreateMatchMethodsAttribute);
+
+                if (existingAttribute.HasNoValue)
+                {
+                    var updatedHostClass = hostClassValue.AddAttributeLists(SyntaxFactory.AttributeList(
+                        SyntaxFactory.SeparatedList(new[]
+                        {
+                            CreateMatchMethodAttribute(annotationForAttributeSyntax),
+                        })));
+
+
+                    var newSolutionWithHostClassAdded = originalSolution.WithDocumentSyntaxRoot(document.Id,
+                        root.ReplaceNode(hostClassValue, updatedHostClass));
+
+                    var newDocument = newSolutionWithHostClassAdded.GetDocument(document.Id);
+
+                    var newDocumentRoot = await newDocument.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+                    return await CreateMatchMethods(
+                        newDocument,
+                        (AttributeSyntax)newDocumentRoot.GetAnnotatedNodes(annotationForAttributeSyntax).Single(),
+                        newDocumentRoot,
+                        cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    return await CreateMatchMethods(
+                        document,
+                        existingAttribute.GetValue(),
+                        root,
+                        cancellationToken).ConfigureAwait(false);
+                }
+            }
+        }
+
+
         private static Maybe<INamedTypeSymbol[]> GetDataObjectTypesToCreateMatchMethodsFor(
             AttributeSyntax attributeSyntax,
             SemanticModel semanticModel)
@@ -118,6 +210,19 @@ namespace DataObjectHelper
                     return methods1.ToArray();
                 });
         }
+
+        private static Maybe<MethodDeclarationSyntax[]> GetMethodsToAddForType(INamedTypeSymbol doTypeSymbol, Solution originalSolution)
+        {
+            var casesMaybe = CreateCases(doTypeSymbol, originalSolution);
+
+            return casesMaybe
+                .ChainValue(cases => new []
+                {
+                    CreateMatchMethod(doTypeSymbol, cases),
+                    CreateMatchMethodThatReturnsVoid(doTypeSymbol, cases)
+                });
+        }
+
 
         public static Maybe<Case[]> CreateCases(INamedTypeSymbol doTypeSymbol,
             Solution originalSolution)

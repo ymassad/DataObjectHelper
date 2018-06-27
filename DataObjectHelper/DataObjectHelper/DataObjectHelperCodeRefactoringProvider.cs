@@ -19,10 +19,7 @@ namespace DataObjectHelper
             var attributeSyntax = node.TryCast().To<AttributeSyntax>()
                 .ValueOrMaybe(() => node.Parent.TryCast().To<AttributeSyntax>());
 
-            var attributeNameSyntax = attributeSyntax
-                .ChainValue(x => x.Name.TryCast().To<IdentifierNameSyntax>());
-
-            if (attributeNameSyntax.HasValueAnd(x => x.Identifier.Text.EqualsAny("CreateMatchMethods", "CreateMatchMethodsAttribute")))
+            if (attributeSyntax.HasValueAnd(Utilities.IsCreateMatchMethodsAttribute))
             {
                 var action = CodeAction.Create(
                     "Create Match methods",
@@ -32,7 +29,7 @@ namespace DataObjectHelper
 
             }
 
-            if (attributeNameSyntax.HasValueAnd(x => x.Identifier.Text.EqualsAny("CreateWithMethods", "CreateWithMethodsAttribute")))
+            if (attributeSyntax.HasValueAnd(Utilities.IsCreateWithMethodsAttribute))
             {
                 var action = CodeAction.Create(
                     "Create With methods",
@@ -40,6 +37,19 @@ namespace DataObjectHelper
 
                 context.RegisterRefactoring(action);
             }
+
+            var classSyntax = node.TryCast().To<ClassDeclarationSyntax>().If(x => !x.IsStatic());
+
+            if (classSyntax.HasValue)
+            {
+                var action = CodeAction.Create(
+                    "Create Match methods",
+                    c => MatchCreation.CreateMatchMethods(context.Document, classSyntax.GetValue(), root, c));
+
+                context.RegisterRefactoring(action);
+
+            }
+
         }
     }
 }

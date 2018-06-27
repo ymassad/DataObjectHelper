@@ -140,5 +140,25 @@ namespace DataObjectHelper
                 SyntaxFactory.IdentifierName(child));
         }
 
+        public static ClassDeclarationSyntax CreateEmptyPublicStaticClass(string newClassName)
+        {
+            return SyntaxFactory.ClassDeclaration(newClassName)
+                .WithModifiers(
+                    SyntaxFactory.TokenList(
+                        SyntaxFactory.Token(SyntaxKind.PublicKeyword),
+                        SyntaxFactory.Token(SyntaxKind.StaticKeyword)));
+        }
+
+        public static bool IsCreateMatchMethodsAttribute(AttributeSyntax attribute)
+        {
+            return attribute.Name.TryCast().To<IdentifierNameSyntax>().HasValueAnd(x =>
+                x.Identifier.Text.EqualsAny("CreateMatchMethods", "CreateMatchMethodsAttribute"));
+        }
+
+        public static bool IsCreateWithMethodsAttribute(AttributeSyntax attribute)
+        {
+            return attribute.Name.TryCast().To<IdentifierNameSyntax>().HasValueAnd(x =>
+                x.Identifier.Text.EqualsAny("CreateWithMethods", "CreateWithMethodsAttribute"));
+        }
     }
 }
