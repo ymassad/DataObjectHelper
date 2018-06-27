@@ -740,22 +740,6 @@ public static class Methods
             Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
         }
 
-        private static TextSpan SelectSpanWhereCreateMatchMethodsAttributeIsApplied(SyntaxNode rootNode)
-        {
-            return rootNode.DescendantNodes()
-                .OfType<AttributeSyntax>()
-                .Single(x => x.Name is SimpleNameSyntax name && name.Identifier.Text == "CreateMatchMethods")
-                .Span;
-        }
-
-        private static TextSpan SelectSpanWhereClassIsDeclared (SyntaxNode rootNode, string className)
-        {
-            return rootNode.DescendantNodes()
-                .OfType<ClassDeclarationSyntax>()
-                .Single(x => x.Identifier.Text == className)
-                .Span;
-        }
-
         [Test]
         public void TestCreateMatchMethodsByApplyingRefactoringOnTheSumTypeClassItselfAndExtensionMethodsClassDoesNotExist()
         {
@@ -798,8 +782,11 @@ public static class SumTypeExtensionMethods
 
             //Act
             var actualContentAfterRefactoring =
-                Utilities.NormalizeCode(Utilities.ApplyRefactoring(content,
-                    x => SelectSpanWhereClassIsDeclared(x, "SumType")));
+                Utilities.NormalizeCode(
+                    Utilities.ApplyRefactoring(
+                        content,
+                        x => Utilities.SelectSpanWhereClassIsDeclared(x, "SumType"),
+                        "Create Match methods"));
 
             //Assert
             Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
@@ -854,8 +841,11 @@ public static class SumTypeExtensionMethods
 
             //Act
             var actualContentAfterRefactoring =
-                Utilities.NormalizeCode(Utilities.ApplyRefactoring(content,
-                    x => SelectSpanWhereClassIsDeclared(x , "SumType")));
+                Utilities.NormalizeCode(
+                    Utilities.ApplyRefactoring(
+                        content,
+                        x => Utilities.SelectSpanWhereClassIsDeclared(x , "SumType"),
+                        "Create Match methods"));
 
             //Assert
             Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
@@ -910,11 +900,22 @@ public static class SumTypeExtensionMethods
 
             //Act
             var actualContentAfterRefactoring =
-                Utilities.NormalizeCode(Utilities.ApplyRefactoring(content,
-                    x => SelectSpanWhereClassIsDeclared(x, "SumType")));
+                Utilities.NormalizeCode(
+                    Utilities.ApplyRefactoring(
+                        content,
+                        x => Utilities.SelectSpanWhereClassIsDeclared(x, "SumType"),
+                        "Create Match methods"));
 
             //Assert
             Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
+        }
+
+        private static TextSpan SelectSpanWhereCreateMatchMethodsAttributeIsApplied(SyntaxNode rootNode)
+        {
+            return rootNode.DescendantNodes()
+                .OfType<AttributeSyntax>()
+                .Single(x => x.Name is SimpleNameSyntax name && name.Identifier.Text == "CreateMatchMethods")
+                .Span;
         }
 
     }

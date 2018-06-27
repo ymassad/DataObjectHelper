@@ -42,12 +42,17 @@ namespace DataObjectHelper
 
             if (classSyntax.HasValue)
             {
-                var action = CodeAction.Create(
+                var createMatchMethodsAction = CodeAction.Create(
                     "Create Match methods",
                     c => MatchCreation.CreateMatchMethods(context.Document, classSyntax.GetValue(), root, c));
 
-                context.RegisterRefactoring(action);
+                context.RegisterRefactoring(createMatchMethodsAction);
 
+                var createWithMethodsAction = CodeAction.Create(
+                    "Create With methods",
+                    c => WithMethodCreation.CreateWithMethods(context.Document, classSyntax.GetValue(), root, c));
+
+                context.RegisterRefactoring(createWithMethodsAction);
             }
 
         }

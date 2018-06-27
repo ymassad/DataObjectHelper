@@ -875,6 +875,145 @@ public static class Methods
             Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
         }
 
+        [Test]
+        public void TestCreateWithMethodsByApplyingRefactoringOnTheProductTypeClassItselfAndExtensionMethodsClassDoesNotExist()
+        {
+            //Arrange
+            var expectedMethodsClassCodeAfterRefactoring =
+                @"[CreateWithMethods(typeof(ProductType))]
+public static class ProductTypeExtensionMethods
+{
+    public static ProductType WithAge(this ProductType instance, System.Int32 newValue)
+    {
+        return new ProductType(age: newValue, name: instance.Name);
+    }
+
+    public static ProductType WithName(this ProductType instance, System.String newValue)
+    {
+        return new ProductType(age: instance.Age, name: newValue);
+    }
+}";
+            var content =
+                Utilities.MergeParts(
+                    createWithMethodsAttributeCode, productTypeClassCode);
+
+            var expectedContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.MergeParts(
+                        createWithMethodsAttributeCode,
+                        productTypeClassCode,
+                        expectedMethodsClassCodeAfterRefactoring));
+
+            //Act
+            var actualContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.ApplyRefactoring(
+                        content,
+                        x => Utilities.SelectSpanWhereClassIsDeclared(x, "ProductType"),
+                        "Create With methods"));
+
+            //Assert
+            Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
+        }
+
+        [Test]
+        public void TestCreateWithMethodsByApplyingRefactoringOnTheProductTypeClassItselfAndExtensionMethodsClassExistsButAttributeIsNotAppliedOnStaticClass()
+        {
+            //Arrange
+
+            var methodsClassCode =
+                @"
+public static class ProductTypeExtensionMethods
+{
+
+}";
+
+            var expectedMethodsClassCodeAfterRefactoring =
+                @"[CreateWithMethods(typeof(ProductType))]
+public static class ProductTypeExtensionMethods
+{
+    public static ProductType WithAge(this ProductType instance, System.Int32 newValue)
+    {
+        return new ProductType(age: newValue, name: instance.Name);
+    }
+
+    public static ProductType WithName(this ProductType instance, System.String newValue)
+    {
+        return new ProductType(age: instance.Age, name: newValue);
+    }
+}";
+            var content =
+                Utilities.MergeParts(
+                    createWithMethodsAttributeCode, productTypeClassCode, methodsClassCode);
+
+            var expectedContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.MergeParts(
+                        createWithMethodsAttributeCode,
+                        productTypeClassCode,
+                        expectedMethodsClassCodeAfterRefactoring));
+
+            //Act
+            var actualContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.ApplyRefactoring(
+                        content,
+                        x => Utilities.SelectSpanWhereClassIsDeclared(x, "ProductType"),
+                        "Create With methods"));
+
+            //Assert
+            Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
+        }
+
+        [Test]
+        public void TestCreateWithMethodsByApplyingRefactoringOnTheProductTypeClassItselfAndExtensionMethodsClassExistsButAttributeIsAppliedOnStaticClass()
+        {
+            //Arrange
+
+            var methodsClassCode =
+                @"[CreateWithMethods(typeof(ProductType))]
+public static class ProductTypeExtensionMethods
+{
+
+}";
+
+            var expectedMethodsClassCodeAfterRefactoring =
+                @"[CreateWithMethods(typeof(ProductType))]
+public static class ProductTypeExtensionMethods
+{
+    public static ProductType WithAge(this ProductType instance, System.Int32 newValue)
+    {
+        return new ProductType(age: newValue, name: instance.Name);
+    }
+
+    public static ProductType WithName(this ProductType instance, System.String newValue)
+    {
+        return new ProductType(age: instance.Age, name: newValue);
+    }
+}";
+            var content =
+                Utilities.MergeParts(
+                    createWithMethodsAttributeCode, productTypeClassCode, methodsClassCode);
+
+            var expectedContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.MergeParts(
+                        createWithMethodsAttributeCode,
+                        productTypeClassCode,
+                        expectedMethodsClassCodeAfterRefactoring));
+
+            //Act
+            var actualContentAfterRefactoring =
+                Utilities.NormalizeCode(
+                    Utilities.ApplyRefactoring(
+                        content,
+                        x => Utilities.SelectSpanWhereClassIsDeclared(x, "ProductType"),
+                        "Create With methods"));
+
+            //Assert
+            Assert.AreEqual(expectedContentAfterRefactoring, actualContentAfterRefactoring);
+        }
+
 
         private static TextSpan SelectSpanWhereCreateWithMethodsAttributeIsApplied(SyntaxNode rootNode)
         {

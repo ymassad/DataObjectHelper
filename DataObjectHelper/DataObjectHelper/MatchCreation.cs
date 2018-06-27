@@ -211,19 +211,6 @@ namespace DataObjectHelper
                 });
         }
 
-        private static Maybe<MethodDeclarationSyntax[]> GetMethodsToAddForType(INamedTypeSymbol doTypeSymbol, Solution originalSolution)
-        {
-            var casesMaybe = CreateCases(doTypeSymbol, originalSolution);
-
-            return casesMaybe
-                .ChainValue(cases => new []
-                {
-                    CreateMatchMethod(doTypeSymbol, cases),
-                    CreateMatchMethodThatReturnsVoid(doTypeSymbol, cases)
-                });
-        }
-
-
         public static Maybe<Case[]> CreateCases(INamedTypeSymbol doTypeSymbol,
             Solution originalSolution)
         {

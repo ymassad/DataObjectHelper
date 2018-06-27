@@ -52,6 +52,95 @@ namespace DataObjectHelper
             return solutionToReturn.ValueOr(originalSolution);
         }
 
+        public static async Task<Solution> CreateWithMethods(Document document, ClassDeclarationSyntax classSyntax, SyntaxNode root, CancellationToken cancellationToken)
+        {
+            AttributeSyntax CreateWithMethodAttribute(SyntaxAnnotation syntaxAnnotation)
+            {
+                return SyntaxFactory.Attribute(
+                    SyntaxFactory.IdentifierName("CreateWithMethods"),
+                    SyntaxFactory.AttributeArgumentList(
+                        SyntaxFactory.SeparatedList(new[]
+                        {
+                            SyntaxFactory.AttributeArgument(
+                                SyntaxFactory.TypeOfExpression(
+                                    SyntaxFactory.IdentifierName(classSyntax.Identifier.Text))),
+                        }))).WithAdditionalAnnotations(syntaxAnnotation);
+            }
+
+            var originalSolution = document.Project.Solution;
+
+            var staticExtensionsClassName = classSyntax.Identifier.Text + "ExtensionMethods";
+
+            var annotationForAttributeSyntax = new SyntaxAnnotation();
+
+            var hostClass =
+                classSyntax.Parent.ChildNodes().OfType<ClassDeclarationSyntax>()
+                    .Where(x => x.IsStatic() && x.Identifier.Text == staticExtensionsClassName)
+                    .FirstOrNoValue();
+
+            if (hostClass.HasNoValue)
+            {
+                var newHostClass =
+                    Utilities
+                        .CreateEmptyPublicStaticClass(staticExtensionsClassName)
+                        .WithAttributeLists(SyntaxFactory.List(new[]
+                        {
+                            SyntaxFactory.AttributeList(SyntaxFactory.SeparatedList(new[]
+                            {
+                                CreateWithMethodAttribute(annotationForAttributeSyntax),
+                            }))
+                        }));
+
+                var newSolutionWithHostClassAdded = originalSolution.WithDocumentSyntaxRoot(document.Id,
+                    root.InsertNodesAfter(classSyntax, new[] { newHostClass }));
+
+                var newDocument = newSolutionWithHostClassAdded.GetDocument(document.Id);
+
+                var newDocumentRoot = await newDocument.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+                return await CreateWithMethods(
+                    newDocument,
+                    (AttributeSyntax)newDocumentRoot.GetAnnotatedNodes(annotationForAttributeSyntax).Single(),
+                    newDocumentRoot,
+                    cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                var hostClassValue = hostClass.GetValue();
+                var existingAttribute = hostClassValue.AttributeLists.SelectMany(x => x.Attributes)
+                    .FirstOrNoValue(Utilities.IsCreateWithMethodsAttribute);
+
+                if (existingAttribute.HasNoValue)
+                {
+                    var updatedHostClass = hostClassValue.AddAttributeLists(SyntaxFactory.AttributeList(
+                        SyntaxFactory.SeparatedList(new[]
+                        {
+                            CreateWithMethodAttribute(annotationForAttributeSyntax),
+                        })));
+
+
+                    var newSolutionWithHostClassAdded = originalSolution.WithDocumentSyntaxRoot(document.Id,
+                        root.ReplaceNode(hostClassValue, updatedHostClass));
+
+                    var newDocument = newSolutionWithHostClassAdded.GetDocument(document.Id);
+
+                    var newDocumentRoot = await newDocument.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+                    return await CreateWithMethods(
+                        newDocument,
+                        (AttributeSyntax)newDocumentRoot.GetAnnotatedNodes(annotationForAttributeSyntax).Single(),
+                        newDocumentRoot,
+                        cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    return await CreateWithMethods(
+                        document,
+                        existingAttribute.GetValue(),
+                        root,
+                        cancellationToken).ConfigureAwait(false);
+                }
+            }
+        }
+
         private static Maybe<INamedTypeSymbol[]> GetDataObjectTypeToCreateWithMethodsFor(
             AttributeSyntax attributeSyntax,
             SemanticModel semanticModel)

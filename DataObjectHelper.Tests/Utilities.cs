@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeRefactorings;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
 namespace DataObjectHelper.Tests
@@ -39,7 +40,19 @@ namespace DataObjectHelper.Tests
 }}";
         }
 
-        public static string ApplyRefactoring(string content, Func<SyntaxNode, TextSpan> spanSelector, params MetadataReference[] additionalReferences)
+        public static string ApplyRefactoring(
+            string content,
+            Func<SyntaxNode, TextSpan> spanSelector,
+            params MetadataReference[] additionalReferences)
+        {
+            return ApplyRefactoring(content, spanSelector, Maybe.NoValue, additionalReferences);
+        }
+
+        public static string ApplyRefactoring(
+            string content,
+            Func<SyntaxNode, TextSpan> spanSelector,
+            Maybe<string> refactoringName,
+            params MetadataReference[] additionalReferences)
         {
             var workspace = new AdhocWorkspace();
 
@@ -74,11 +87,14 @@ namespace DataObjectHelper.Tests
             
             refactoringActions.ForEach(action =>
             {
-                var operations = action.GetOperationsAsync(CancellationToken.None).Result;
-
-                foreach (var operation in operations)
+                if (refactoringName.HasNoValue || action.Title == refactoringName.GetValue())
                 {
-                    operation.Apply(workspace, CancellationToken.None);
+                    var operations = action.GetOperationsAsync(CancellationToken.None).Result;
+
+                    foreach (var operation in operations)
+                    {
+                        operation.Apply(workspace, CancellationToken.None);
+                    }
                 }
             });
             
@@ -120,6 +136,14 @@ namespace DataObjectHelper.Tests
                             csharpSymbolsReference,
                             codeAnalysisReference
                         }.Concat(additionalReferences).ToArray()));
+        }
+
+        public static TextSpan SelectSpanWhereClassIsDeclared (SyntaxNode rootNode, string className)
+        {
+            return rootNode.DescendantNodes()
+                .OfType<ClassDeclarationSyntax>()
+                .Single(x => x.Identifier.Text == className)
+                .Span;
         }
     }
 }
