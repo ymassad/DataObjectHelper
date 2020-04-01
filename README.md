@@ -9,3 +9,7 @@ The extension (which is free) can be found in the visual studio marketplace here
 If you have Resharper, you may not see the "Create With Methods" and "Create Match Methods" code actions in the Visual Studio bulb because Resharper might have hidden them. You can configure Resharper to include Roslyn based code actions in their own bulb from the options:
 
 ![Resharper Merge Bulb Setting](https://raw.githubusercontent.com/ymassad/DataObjectHelper/master/ResharperMergeBulbSetting.jpg)
+
+It seems that in newer versions of Resharper, the location of this setting has changed:
+
+![Resharper Merge Bulb Setting2](https://raw.githubusercontent.com/ymassad/DataObjectHelper/master/ResharperMergeBulbSetting2.jpg)
